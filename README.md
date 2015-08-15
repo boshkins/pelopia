@@ -18,7 +18,7 @@ TODO: Write usage instructions
 
 ## History
 
-TODO: Write history
+2015-08-13: created this repository.
 
 ## Credits
 
@@ -28,3 +28,6 @@ TODO: Write credits
 
 TODO: Write license
 
+## Attribution
+
+This library uses [Catch](https://github.com/philsquared/Catch "Catch") for unit testing. 
