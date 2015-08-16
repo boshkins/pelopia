@@ -5,7 +5,7 @@
 
 This project represents a native, offline geocoding solution over a relatively small set of data (e.g. a city).
 
-The goal is to implement a set of features as close to the online solution, Pelias, as practical.
+The goal is to implement a set of features as close to the online solution, [Pelias](https://github.com/pelias/api), as practical.
 
 The solution is to be cross-platform: Windows, Linux, Android; later on OS X, iOS.
 
@@ -37,9 +37,11 @@ The library must handle out-of-memory conditions gracefully in a variety of situ
 
 The operations identified in this section should be declared in a separate C++ namespace (pelopia); if they are implemented as methods on a class, so should be the class.
 
-In the operation descriptions, the notation { X } is used to denote a possibly empty collection of objects of type X.  
+In the operations' descriptions below, the notation { X } is used to denote a possibly empty collection of objects of type X.  
 
-###Search ( string, categories, options ) : { string }
+The result sets (**Geocode**) returned by the search operations should be represented in conformance to [geocodejson-spec](https://github.com/geocoders/geocodejson-spec). In the context of a C++ API, this means a class providing read access to all properties prescribed by the specification, as well as a function/method to convert the object into a character string representing an equivalent GeocodeJSON object.
+
+###Search ( string, categories, options ) : Geocode
 ####Options:
 - LatLon, radius, or:
 - Bounding box: bottom-left LatLon, top-right LatLon
@@ -49,10 +51,10 @@ In the operation descriptions, the notation { X } is used to denote a possibly e
 Either string or categories must be present.
 This operation can make the assumption that its text input is complete. 
 
-###SearchCoarse ( string, options ) : { string }
+###SearchCoarse ( string, options ) : Geocode
  Like Search above but will only search administrative regions (countries, states, counties, neighborhoods, etc.).
 
-###Autocomplete ( string, options ) : { string }
+###Autocomplete ( string, options ) : Geocode
 
 ####Options
 - LatLon
@@ -64,13 +66,13 @@ This operation can make the assumption that its text input is complete.
 Unlike Search, this operation will be called with incomplete text. It will also be called at a much higher rate than Search and must be sufficiently performant.  
 
 
-###Reverse ( LatLon ) : { string } – or a single string ?
+###Reverse ( LatLon ) : Geocode
 ####Options
 - Zoom level
 - Layers: dataset(s) to query
 - Details: whether to search in all properties, or only in id/layer/text
 
-###Place ( { id } ) : { string } – or structures? Json values?
+###Place ( { id } ) : Geocode
 
 
 ##Additional APIs
