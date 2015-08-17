@@ -33,57 +33,103 @@ The library must handle out-of-memory conditions gracefully in a variety of situ
 - when asked to open a dataset that would require more RAM than is available from OS at the moment
 - when running out of RAM in the course of operation
 
-##API
+##Core API
 
 The operations identified in this section should be declared in a separate C++ namespace (pelopia); if they are implemented as methods on a class, so should be the class.
 
 In the operations' descriptions below, the notation { X } is used to denote a possibly empty collection of objects of type X.  
 
-The result sets (**Geocode**) returned by the search operations should be represented in conformance to [geocodejson-spec](https://github.com/geocoders/geocodejson-spec). In the context of a C++ API, this means a class providing read access to all properties prescribed by the specification, as well as a function/method to convert the object into a character string representing an equivalent GeocodeJSON object.
+The result sets (**Response**) returned by the search operations should be represented in conformance to [geocodejson-spec](https://github.com/geocoders/geocodejson-spec). In the context of a C++ API, this means a class providing read access to all properties prescribed by the specification, as well as a function/method to convert the object into a character string representing an equivalent GeocodeJSON object.
 
-###Search ( string, categories, options ) : Geocode
-####Options:
-- LatLon, radius, or:
-- Bounding box: bottom-left LatLon, top-right LatLon
-- Size: max numbers of results to return
-- Details: whether to search in all properties, or only in id/layer/text
+###Search ( *text*, *scope*, *format* ) : *Response*
 
-Either string or categories must be present.
-This operation can make the assumption that its text input is complete. 
+Produces full text search results sorted by linguistic relevance to the given input string. Results should contain a quality value (e.g. [levenshtine distance](https://en.wikipedia.org/wiki/Levenshtein_distance) from the search string)
 
-###SearchCoarse ( string, options ) : Geocode
- Like Search above but will only search administrative regions (countries, states, counties, neighborhoods, etc.).
+####*text*:
+A complete search string. 
 
-###Autocomplete ( string, options ) : Geocode
+Q. *May contain multiple words separated by whitespace.* ?
+ 
+Q. *Normalize against WOF taxonomy where appropriate* ?
 
-####Options
-- LatLon
-- Zoom level
-- Size: max numbers of results to return
-- Layers: dataset(s) to query
-- Details: whether to search in all properties, or only in id/layer/text
+####*scope*:
+- **LatLon**, optional radius, or:
+- Bounding box: bottom-left **LatLon**, top-right **LatLon**
 
-Unlike Search, this operation will be called with incomplete text. It will also be called at a much higher rate than Search and must be sufficiently performant.  
+####*format*:
+- Size: max numbers of results to return. Optional; 10 if not specified. 
 
+###Search ( *category*, *scope*, *format* ) : *Response*
 
-###Reverse ( LatLon ) : Geocode
-####Options
-- Zoom level
-- Layers: dataset(s) to query
-- Details: whether to search in all properties, or only in id/layer/text
+Produces search results matching at least one of the specified categories. 
 
-###Place ( { id } ) : Geocode
+####*category*:
+An array of string values such as POI types (restaurant, bank, education) and types of places (address, POI, city, country, state, etc).
 
+*Q. Are these arbitrary strings or an enum-like fixed set of values?*  
+
+*Q. Quality value?* 
+
+####*scope*, *format*:
+Same as above.
+
+###SearchCoarse ( *text*, *scope*, *format* ) : *Response*
+ Like Search above but will only search administrative regions (countries, states, counties, neighborhoods, etc.). Could be an additional argument or an overload of Search.
+
+*Q. For category, as well?* If yes, better to make an extra argument (or add to *scope*).
+
+###Autocomplete ( *text*, *scope*, *format* ) : *Response*
+
+Similar to Search on a text string. Unlike Search, this operation will be called with incomplete text. It will also be called at a much higher rate than Search and must be sufficiently performant.  
+
+####*text*, *scope*, *format*
+Same as in Search.
+
+*Q. Response: one or more?*
+
+###Reverse ( *LatLon*. *scope*, *format* ) : *Response*
+
+####scope: radius (mi, km, m). Optional, unlimited by default
+
+###Place ( { *ids* } ) : *Response*
+
+####ids: one or more ID
+
+*Q. How to define an ID?*
 
 ##Additional APIs
 
-###Download ( bounding box, dataset_name )
-Optionally compress ?
+These operations are not defined in Pelias but are needed here because of the "offlie" natur  reof this project.
+ 
+###Configure ( *dataset_location*, *create* )
+
+Configures the library to use the given file system location to save and look for datasets in.
+
+####*dataset_location*
+
+An OS-specific directory path. 
+
+####*create*
+
+If true, the directory will be created if it does not exist.
+
+###Download ( *source*, *dataset_name* )
+
+Download a dataset from the specified URL using HTTP(S) GET operation, convert the result into the library's internal format if necessary and save in the currently configured dataset directory. Each dataset becomes a single file and can be manipulated using the particular OS's file-related tools.
+
+*Q. Examples URLs to download from?*
+
+The downloaded data is expected to be in GeoJSON format (application/vnd.geo+json). 
+
+The details of conversion to the internal format will be specified in the design stage.  
 
 ###Use ( { dataset_name } )
-class constructor ?
 
-###Configure ( { dataset_location } )
+Open the specified dataset to use API operations on. This is likely to correspond to the class constructor.  
+
+####*dataset_name*
+
+File name expected to be found in the currently configured dataset_location (see Configure above). 
 
 
 ##Packaging and Installation
