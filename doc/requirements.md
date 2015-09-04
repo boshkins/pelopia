@@ -69,7 +69,7 @@ See [category_map.js](https://github.com/pelias/openstreetmap/blob/master/config
 ####*scope*, *format*:
 Same as above.
 
-#Autocomplete ( *text*, *scope* ) : *Response*
+###Autocomplete ( *text*, *scope* ) : *Response*
 
 Similar to Search on a text string. Unlike Search, this operation will be called with incomplete text. It will also be called at a much higher rate than Search and must be sufficiently performant.  
 
