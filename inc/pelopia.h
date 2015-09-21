@@ -10,9 +10,14 @@
 * Project repository: https://github.com/boshkins/pelopia
 */
 
-namespace pelopia
+namespace MapZen
 {
-	bool Search();
+	namespace Pelopia
+	{
+
+		bool Search();
+
+	}
 }
 
 #endif

@@ -81,10 +81,12 @@ Same as in Search. Format/size is fixed at 10.
 ####*scope*: 
 - radius (specified in miles, kilometers, meters - all should be supported). Optional, unlimited (i.e. covering the entire dataset) by default
 
-###Place ( { *ids* } ) : *Response*
+###Place ( { *ids* } ) : *{ Location }*
 
 ####ids: one or more ID
 Converts specified IDs into corresponding C++ or stringified GeoJSON objects.
+####Location: 
+A C++ representation of GeoJSON object (possibly stringified) 
 
 IDs are returned by other operations of the library (directly or as properties of C++ objects) and are opaque for the user. An ID uniquely identifies an object in its dataset.
 
