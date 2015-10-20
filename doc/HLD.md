@@ -16,6 +16,9 @@ The structure of the document is as follows:
 - A set of stories to act as the initial backlog for the project
 - A list of implementation milestones  
 
+##References
+1. C.Gormley, Z.Tong. Elasticsearch: The Definitive Guide. [https://www.elastic.co/guide/en/elasticsearch/guide/master/index.html](https://www.elastic.co/guide/en/elasticsearch/guide/master/index.html)
+
 ##API operations
 
 All externally visible C++ declarations of the API will be contained in the namespace Mapzen :: Pelopia. Any non-C++ wrappers will use prefix MzPel to avoid naming conflicts, if namespaces are not available.
@@ -30,14 +33,28 @@ All externally visible C++ declarations of the API will be contained in the name
 	const ResultCount AllResults = 0;
 	const ResultCount DefaultResults = 10;
 
-	typedef double Coordinate; // likely to change
+	typedef double Coordinate; // degrees; underlying datatype is likely to change
 
 	struct LatLon {
-		Coordinate lat;
-		Coordinate lon;
+		Coordinate lat;	// range -180 .. 360; the extended range is used to handle discontinuity at the 180 meridian
+		Coordinate lon; // range -180 .. 180
 	};
  
-	struct BoundingBox {
+	class BoundingBox {
+	public:
+		// all constructors will recalculate right latitude to above 180 degrees if the 180 meridian lies within the box
+		BoundingBox ( LatLon p_topLeft, LatLon p_bottomRight );
+		BoundingBox ( Coordinate latLeft, Coordinate latRight, Coordinate lonBottom, Coordinate lonTop );
+	
+		const Coordinate Left() const;
+		const Coordinate Right() const;
+		const Coordinate Top() const;
+		const Coordinate Bottom() const;
+
+		const LatLon& TopLeft() const;
+		const LatLon& BottomRight() const;
+
+	private:
 		LatLon topLeft;
 		LatLon bottomRight;
 	};
@@ -50,16 +67,29 @@ All externally visible C++ declarations of the API will be contained in the name
 	typedef string Category;
 
 	typedef uint64_t Id;
+	const Id InvalidId = 0;
 
+	// Match score, in the range 0 .. 1
 	typedef double MatchQuality;
 
 	class Response
 	{	// a collection of results, sorted by descending quality 
 	public:
+		// the number of entries ion the response
 		usigned int Count() const;
 
-		bool Get ( unsigned int index, &Id id, &MatchQuality score ) const;
+		// access location Id and its score by its position in the collection, 0 <= index < Count
+		// returns false if index is outside of [ 0, Count ) 
+		bool Get ( unsigned int index, & Id id, & MatchQuality score ) const;
+
+		// access location Id by position in the collection, 0 <= index < Count
+		// returns InvalidId if index is outside of [ 0, Count )
 		Id Get ( unsigned int index ) const;
+
+		// access the best-scoring completion for the corresponding entry's text, if requested in 
+		// the original query (i.e. Dataset :: Autocomplete called)
+		// returns empty string if index is outside of [ 0, Count )
+		string Autocomplete ( unsigned int index ) const; 
 	}
 
 ### API methods
@@ -69,19 +99,21 @@ All externally visible C++ declarations of the API will be contained in the name
 	public:
 		Dataset ( const char* location ); // file or URL ?
  
-		Response Search (const char* text, const LatLon& scope, Format format = { DefaultResults } );  
+		Response Search (const char* text, 
+						 const LatLon& scope, 
+						 Format format = { DefaultResults } );  
 	
-		Response Search (const char* text, const BoundingBox& scope, Format format = { DefaultResults });  
-	
-		Response Search (vector<string> Category, const LatLon& scope, Format format = { DefaultResults });
-	  
-		Response Search (vector<string> Category, const BoundingBox& scope, Format format = { DefaultResults });  
+		Response Search (const char* text, 
+						 const BoundingBox& scope, 
+						 Format format = { DefaultResults });  
 	
 		Response Autocomplete (const char* text, const LatLon& scope);  
 	
 		Response Autocomplete (const char* text, const BoundingBox& scope);  
 	
-		Response Reverse ( const LatLon& point, const Distance& radius, Format format = { AllResults } );
+		Response Reverse ( const LatLon& point, 
+						   const Distance& radius, 
+						   Format format = { AllResults } );
 
 		vector < GeoJSON::Feature > Place ( vector < Id > ids ); 
 
@@ -92,10 +124,12 @@ All externally visible C++ declarations of the API will be contained in the name
 ### GeoJSON objects
 
 	namespace GeoJSON {
-		// GeoJSON declarations, based on http://geojson.org/geojson-spec.html](http://geojson.org/geojson-spec.html
+		// GeoJSON declarations, based on 
+		// http://geojson.org/geojson-spec.html](http://geojson.org/geojson-spec.html
 
 		class Geometry
-		{	// for now, only Point in Geographic Coordinate Reference System 
+		{	// for now, only Point in Geographic Coordinate Reference System. 
+			// In the future, expand to polygons (open or closed)  
 		public:
 			Coordinate Latitude () const;
 			Coordinate Longitude () const;
@@ -107,7 +141,8 @@ All externally visible C++ declarations of the API will be contained in the name
 
 			const GeometryObject* Geometry() const;
 
-			// Feature access, based on https://github.com/pelias/schema/blob/master/mappings/document.js
+			// Feature access, based on 
+			// https://github.com/pelias/schema/blob/master/mappings/document.js
 
 			const char* Layer () const;
 
@@ -191,17 +226,18 @@ or, using the Pimpl idiom,
 		}
 
 ###Bounding Box search support
-To support search filtered by a BoundingBox, we need an ability to filter locations by their center point. 
+To support search filtered by a BoundingBox, we need an ability to filter locations. Two different cases involve locations specified by a single point (a LatLon value) and by a geoshape ( an open or closed polygon ). 
 
-**Q: What about locations with shaped geometry? Intersection with the given BoundingBox requires something else** 
-
-**LatIndex**: an array of pairs "coordinate, object Id" sorted by coordinate (latitude). There may be multiple entries with matching coordinates.
+**PointLatIndex**: an array of pairs "coordinate, object Id" sorted by coordinate (latitude). This index will only contain objects with location specified as a point. There may be multiple entries with matching coordinates.
  
 The principal operation will be to extract the subset of points located between 2 coordinates [*low* .. *high*]:
 
 	FindSegment ( CoordIndex, LowCoord, HighCoord ) : ( firstIdx, lastIdx )
 		firstIdx = FindFirstGreaterThanOrEqual ( CoordIndex, 0, size ( CoordIndex ), LowCoord )  
-		lastIdx = FindLastLessThanOrEqual ( CoordIndex, firstIdx, size ( CoordIndex ), HighCoord )  
+		lastIdx = FindLastLessThanOrEqual ( CoordIndex, 
+											firstIdx, 
+											size ( CoordIndex ), 
+											HighCoord )  
 		return ( firstIdx, lastIdx )
 
 The coordinate will be initially represented as a double. The alternatives would be float and integer-based fixed point; it may make sense to decrease precision of the coordinate to save space in this structure. The full-precision coordinates extracted from the objects will then be used at the scoring stage to filter out false hits, if necessary. 
@@ -210,42 +246,125 @@ For additional memory savings at the cost of lookup speed, pairs "coordinate, ob
 
 The low level design should allow easy switching between representations. Some experimentation will be required to estimate memory/speed tradeoffs between different representations. 
  
-**LonIndex**: a similar structure using longitude as the coordinate. 
-
-The result of the search is converted into a **Location Filter**: a bitmap indexed by object Id with 1 denoting presence of object in the index.  
+**PointLonIndex**: a similar structure using longitude as the coordinate. 
 
 ####LatLon search support
-For simplicity, we will represent a circular area specified as ( **LatLon**, R ) with a square ( left = Lon-R/2, top = Lat+R/2, right = Lon+R/2, bottom = Lat-R/2 ). This expands the area by about 20% but allows to use the same fast location filtering as for bounding boxes. The potential extraneous hits will have distance to the center of the circle greater than R and can be filtered out at the scoring stage.   
+For simplicity, we will represent a circular area specified as ( **LatLon**, R ) with a square ( left = Lon-R/2, top = Lat+R/2, right = Lon+R/2, bottom = Lat-R/2 ). This expands the area by about 20% but allows to use the same fast location filtering as for bounding boxes. The potential extraneous hits will have distance to the center of the circle greater than R and can be filtered out later, possibly as late as the scoring stage.   
+
+####Locations with point geometry
+Initially, all locations in the dataset will be represented as a single point ( centroid for lines and polygons, see [https://en.wikipedia.org/wiki/Centroid](https://en.wikipedia.org/wiki/Centroid ). 
+The result of the search is converted into a **Location Filter**: a bitmap indexed by object Id with 1 denoting presence of object in the index.
+Building an index for a given bounding box involves calculating an intersection between two sets of locations, corresponding to lookups of **PointLatIndex** and **PointLonIndex**:
+
+	typedef vector < bool > Filter;  
+
+	MakeFilter ( dataset, bbox ) : Filter
+		( first, last ) = PointLatIndex . FindSegment ( bbox.bottom, bbox.top )
+		Filter ret
+		ret . reserve ( TotalObjects );
+		ret . clear ();
+		for each i in (first, last)
+			ret . set ( i )
+
+		( first, last ) = PointLonIndex . FindSegment ( bbox.left, bbox.right )
+
+
+####Locations with shaped geometry
+For location with shaped geometry, we will represent the object's location with a bounding box fully covering the shape (left = minimum longitude of the shape, top = maximum latitude, right = maximum longitude, bottom = minimum latitude). For such locations, the filtering function will be more complex and TBD.
+
+
+####Geo distance calculations
+
+The distance between two points will be calculated assuming that the world is flat, which should be sufficient for relatively small areas. As an option, we can consider implementing more computationally expensive but more accurate Haversine formula [https://en.wikipedia.org/wiki/Haversine_formula](https://en.wikipedia.org/wiki/Haversine_formula)
 
 ####Full text search support
 **TextIndex**: a prefix tree with all words extracted from all relevant properties of all objects in the dataset, after analysis and transformation. Payload is the set of tuples: object Id, property Id, position inside property (offset/length; for multi-value properties also index of the sub-property).
  
 	Make a Location Filter
 	Normalize search terms
-	Objects found in the tree are immediately screened using the filter. The ones passing the filter are added to the result set  
+	Objects found in the tree are immediately screened using the filter. 
+		The ones passing the filter are added to the result set  
 	Repeat for all words, merging result sets (the same object can come in from multiple terms). 
-	Traverse the result set to score and sort. Scoring is TBD. 
+	For each location in the result set, calculate its score. 
+	Sort the result set by decreasing score. 
 
 ####Autocomplete support
 Caching!! Hold on to the text+location of the previous call, results of search on full terms and position in prefix tree for the last word (complete or not). Keep results of the partial search separate from the full terms'. Destroy if the new text (sans last term) or location are different
  
 	Do the search on full (all but last) terms. Save the result set.
-	Search for the last term covers the entire subtree with the root corresponding to the term (as opposed to 
-		full term where it is only the node matching the term). Save the root of the subtree.
-	On the next call, if the last term is a continuation of the prior search's last term, refine search in 
-		the tree starting from the saved root. 
-	If the last term is new (and what was thought of as partial term last time is now full), use the save 
-		subtree's root as the new full term, add to the memorized result set. Do a new partial search with the new last word.   
+	Search for the last term covers the entire subtree with the root corresponding to 
+		the term (as opposed to full term where it is only the node matching the term). 
+		Save the root of the subtree.
+	On the next call, if the last term is a continuation of the prior search's last term, 
+		refine search in the tree starting from the saved root. 
+	If the last term is new (and what was thought of as partial term last time is now full), 
+		use the save subtree's root as the new full term, add to the memorized result set. 
+		Do a new partial search with the new last word.   
+	................................... incomplete
 
 ###Scoring
-TBD
 
-###Category search support
-At this point, category search is not considered for implementation.
+The scoring approach combines Term Frequency / Inverse document frequency with geo scoring, both similar to the approach utilized by elasticsearch / Lucene. 
+
+There should be a mechanism for overriding the library's internal scoring function. The user-supplied function should have access to all the inputs that the internal one does (i.e values used in the formulas below).
+
+To limit the amount of calculations, scoring is applied after geo-filtering.
+
+####Full text search
+
+For each term in a tokenized full text query, calculate its WEIGHT:
+
+Term Frequency (elasticsearch):
+ 
+	TF = sqrt ( # of appearances of the term in the address )
+ 
+Inverse document frequency: the more often the term appears in the dataset, the less relevant it is. This value can be pre-calculated for every term in the dataset, at the cost of increased memory footprint of the dataset. 
+
+	IDF = 1 + log ( totalAddresses / ( 1 + # of addresses containing the term ) )   
+
+Field-length norm: the more words in the query, the lower relevance of words in it:
+
+	FIELD_NORM = 1 / sqrt ( # of terms in the address )
+
+The weight of the term in a query:
+
+	WEIGHT = TF * IDF * FIELD_NORM
+
+
+For each address in the candidate set created by filtering, calculate its SCORE in relation to the current query:
+
+Query Normalization factor:
+
+	QUERY_NORM = 1 / sqrt ( sum ( IDF of each term in the query ) )
+
+Query coordination: rewards addresses that contain a higher percentage of query terms.
+
+	COORD = # of matching terms in the address / total terms in the query
+
+Scoring function, similar to Lucene's Practical Scoring Function:
+
+	SCORE = QUERY_NORM * COORD * sum ( WEIGHT,  for each term in query ) 
+
+In addition, boost score of addresses where the order of found terms matches the order of terms in the query. **TBD**
+
+####Geo scoring
+The purpose of the geo scoring stage is twofold. 
+
+First, the coordinates of retrieved locations are used to filter out false hits appearing due to representation of circles and polygons with an enclosing bounding box, both on the (circular) search region's and on the (shaped) location's side. 
+
+Second, geographical distance between the location and the center of the search region is used as a tie breaker for elements of the result set with matching scores. For a shaped location (when supported), it can be the distance between the center of the search region and the location's centroid. Alternatively, and more expensively calculation-wise, it can be the distance between the center of the search region and the location's nearest point to it.
+
+####Scoring API
+
+	class Scorer
+	{
+	public:
+		virtual MatchQuality Score ( const vector < string > & query, const LatLon & center ) = 0;
+	} 
 
 ###Dataset
-Format, construction, download, validation, opening
-Data format has to be versioned. The dataset has to be validated at download time, or open time, or offline. 
+Format, construction, download, validation, opening.
+Data format has to be versioned. The dataset should to be validated at download time, or open time, or offline. 
 
 ##Analysis and transformation
 Examine libpostal for its usefulness in (international) postal address normalization. Evaluate resource requirements and quality. 
