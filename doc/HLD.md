@@ -36,13 +36,13 @@ All externally visible C++ declarations of the API will be contained in the name
 	typedef double Coordinate; // degrees; underlying datatype is likely to change
 
 	struct LatLon {
-		Coordinate lat;	// range -180 .. 360; the extended range is used to handle discontinuity at the 180 meridian
-		Coordinate lon; // range -180 .. 180
+		Coordinate lat;	// range -180 .. 180 
+		Coordinate lon; // range -180 .. 360; the extended range is used to handle discontinuity at the 180 meridian
 	};
  
 	class BoundingBox {
 	public:
-		// all constructors will recalculate right latitude to above 180 degrees if the 180 meridian lies within the box
+		// all constructors will recalculate right longitude to above 180 degrees if the 180 meridian lies within the box
 		BoundingBox ( LatLon p_topLeft, LatLon p_bottomRight );
 		BoundingBox ( Coordinate latLeft, Coordinate latRight, Coordinate lonBottom, Coordinate lonTop );
 	
@@ -59,10 +59,16 @@ All externally visible C++ declarations of the API will be contained in the name
 		LatLon bottomRight;
 	};
  
-	typedef struct {
-		enum { miles, kilometres, metres } units; 
-		double distance; 
-	} Distance;
+	class Distance 
+	{
+	public:
+		typedef enum { Miles, Kilometers } Units;
+
+		Distance ( Units, double );
+
+		double GetMiles () const;
+		double GetKiloMetres () const;
+	};
 
 	typedef string Category;
 
@@ -99,26 +105,24 @@ All externally visible C++ declarations of the API will be contained in the name
 	public:
 		Dataset ( const char* location ); // file or URL ?
  
-		Response Search (const char* text, 
-						 const LatLon& scope, 
-						 Format format = { DefaultResults } );  
+		Response Search ( const char* text, 
+						  const LatLon& scope,
+						  const Distance& radius = Distance ( Miles, 0 ), 
+						  Format format = { DefaultResults } );  
+
+		Response Search ( const char* text, 
+						  const BoundingBox& scope, 
+						  Format format = { DefaultResults } );  
 	
-		Response Search (const char* text, 
-						 const BoundingBox& scope, 
-						 Format format = { DefaultResults });  
+		Response Autocomplete (const char* text, const LatLon& scope );  
 	
-		Response Autocomplete (const char* text, const LatLon& scope);  
-	
-		Response Autocomplete (const char* text, const BoundingBox& scope);  
+		Response Autocomplete ( const char* text, const BoundingBox& scope );  
 	
 		Response Reverse ( const LatLon& point, 
 						   const Distance& radius, 
 						   Format format = { AllResults } );
 
-		vector < GeoJSON::Feature > Place ( vector < Id > ids ); 
-
-		vector < string > PlaceStringify ( vector < Id > ids );
- 
+		GeoJSON::Feature Place ( Id ) const; 
 	};
 
 ### GeoJSON objects
@@ -167,8 +171,7 @@ All externally visible C++ declarations of the API will be contained in the name
 
 			unsigned int CategoryCount () const;
 			const char* Category ( unsigned int index ) const; 
-			// maybe add CategoryId to work with enum-like categories ?
-
+			// consider adding CategoryId to work with enum-like categories
 
 			string Stringify () const;	
 		};
@@ -226,7 +229,8 @@ or, using the Pimpl idiom,
 		}
 
 ###Bounding Box search support
-To support search filtered by a BoundingBox, we need an ability to filter locations. Two different cases involve locations specified by a single point (a LatLon value) and by a geoshape ( an open or closed polygon ). 
+
+To support search filtered by a BoundingBox, we need an ability to filter locations. Two different cases involve locations specified by a single point (a LatLon value) and by a geoshape ( an open or closed polygon ).
 
 **PointLatIndex**: an array of pairs "coordinate, object Id" sorted by coordinate (latitude). This index will only contain objects with location specified as a point. There may be multiple entries with matching coordinates.
  
@@ -253,36 +257,53 @@ For simplicity, we will represent a circular area specified as ( **LatLon**, R )
 
 ####Locations with point geometry
 Initially, all locations in the dataset will be represented as a single point ( centroid for lines and polygons, see [https://en.wikipedia.org/wiki/Centroid](https://en.wikipedia.org/wiki/Centroid ). 
+
 The result of the search is converted into a **Location Filter**: a bitmap indexed by object Id with 1 denoting presence of object in the index.
+
+	class LocationFilter //naive: : public vector < bool > 
+	{
+	public:
+		LocationFilter ( size_t count ); // reserve and 0-initialize
+		LocationFilter& and ( const LocationFilter& ); 
+	};  
+
+
 Building an index for a given bounding box involves calculating an intersection between two sets of locations, corresponding to lookups of **PointLatIndex** and **PointLonIndex**:
 
-	typedef vector < bool > Filter;  
+	MakeFilter ( dataset, bbox ) : LocationFilter
 
-	MakeFilter ( dataset, bbox ) : Filter
 		( first, last ) = PointLatIndex . FindSegment ( bbox.bottom, bbox.top )
-		Filter ret
-		ret . reserve ( TotalObjects );
-		ret . clear ();
+		LocationFilter lat ( TotalObjects );
 		for each i in (first, last)
-			ret . set ( i )
+			lat [ i ] = true;
 
+		LocationFilter lon ( TotalObjects );
 		( first, last ) = PointLonIndex . FindSegment ( bbox.left, bbox.right )
+		for each i in (first, last)
+			lon [ i ] = true;
 
+		// combine lat and lon filters
+		return lat . and ( lon )
 
 ####Locations with shaped geometry
-For location with shaped geometry, we will represent the object's location with a bounding box fully covering the shape (left = minimum longitude of the shape, top = maximum latitude, right = maximum longitude, bottom = minimum latitude). For such locations, the filtering function will be more complex and TBD.
+For location with shaped geometry, we will represent the object's location with a bounding box fully covering the shape (left = minimum longitude of the shape, top = maximum latitude, right = maximum longitude, bottom = minimum latitude). For such locations, the filtering function will be more complex and **TBD**.
 
 
 ####Geo distance calculations
 
-The distance between two points will be calculated assuming that the world is flat, which should be sufficient for relatively small areas. As an option, we can consider implementing more computationally expensive but more accurate Haversine formula [https://en.wikipedia.org/wiki/Haversine_formula](https://en.wikipedia.org/wiki/Haversine_formula)
+The distance between two points will be calculated assuming that the world is flat, which should be sufficient for relatively small areas. As an option, we can consider implementing more computationally expensive but more accurate Haversine formula [https://en.wikipedia.org/wiki/Haversine_formula](https://en.wikipedia.org/wiki/Haversine_formula). For now, the distance is calculated as
+
+	Distance ( LatLon ( lat1, lon1 ), LatLon ( lat2, lon2 ) ) = sqrt ( ( lat2 - lat1 ) ** 2 + ( lon2 - lon1 ) ** 2 )  
 
 ####Full text search support
 **TextIndex**: a prefix tree with all words extracted from all relevant properties of all objects in the dataset, after analysis and transformation. Payload is the set of tuples: object Id, property Id, position inside property (offset/length; for multi-value properties also index of the sub-property).
  
 	Make a Location Filter
-	Normalize search terms
-	Objects found in the tree are immediately screened using the filter. 
+	Normalize query: remove stop words, break into terms (or use an address normalization library)
+	for each term in the query
+		locate the tree node corresponding to the term
+		for each object attached to the node
+			Objects found in the tree are immediately screened using the filter. 
 		The ones passing the filter are added to the result set  
 	Repeat for all words, merging result sets (the same object can come in from multiple terms). 
 	For each location in the result set, calculate its score. 
@@ -291,15 +312,18 @@ The distance between two points will be calculated assuming that the world is fl
 ####Autocomplete support
 Caching!! Hold on to the text+location of the previous call, results of search on full terms and position in prefix tree for the last word (complete or not). Keep results of the partial search separate from the full terms'. Destroy if the new text (sans last term) or location are different
  
-	Do the search on full (all but last) terms. Save the result set.
+	Do the search on full (all but last) terms. Save the result set, with scores.
+
 	Search for the last term covers the entire subtree with the root corresponding to 
 		the term (as opposed to full term where it is only the node matching the term). 
 		Save the root of the subtree.
+
 	On the next call, if the last term is a continuation of the prior search's last term, 
 		refine search in the tree starting from the saved root. 
 	If the last term is new (and what was thought of as partial term last time is now full), 
 		use the save subtree's root as the new full term, add to the memorized result set. 
 		Do a new partial search with the new last word.   
+
 	................................... incomplete
 
 ###Scoring
@@ -308,13 +332,13 @@ The scoring approach combines Term Frequency / Inverse document frequency with g
 
 There should be a mechanism for overriding the library's internal scoring function. The user-supplied function should have access to all the inputs that the internal one does (i.e values used in the formulas below).
 
-To limit the amount of calculations, scoring is applied after geo-filtering.
+To limit the amount of calculations, scoring is applied after applying location filtering.
 
 ####Full text search
 
 For each term in a tokenized full text query, calculate its WEIGHT:
 
-Term Frequency (elasticsearch):
+Term Frequency:
  
 	TF = sqrt ( # of appearances of the term in the address )
  
@@ -348,7 +372,7 @@ Scoring function, similar to Lucene's Practical Scoring Function:
 In addition, boost score of addresses where the order of found terms matches the order of terms in the query. **TBD**
 
 ####Geo scoring
-The purpose of the geo scoring stage is twofold. 
+The purpose of the geo-scoring stage is twofold. 
 
 First, the coordinates of retrieved locations are used to filter out false hits appearing due to representation of circles and polygons with an enclosing bounding box, both on the (circular) search region's and on the (shaped) location's side. 
 
@@ -359,12 +383,21 @@ Second, geographical distance between the location and the center of the search 
 	class Scorer
 	{
 	public:
-		virtual MatchQuality Score ( const vector < string > & query, const LatLon & center ) = 0;
+		virtual MatchQuality Score ( Dataset &, const vector < string > & query, const LatLon & center ) = 0;
 	} 
 
 ###Dataset
-Format, construction, download, validation, opening.
-Data format has to be versioned. The dataset should to be validated at download time, or open time, or offline. 
+Originally, dataset will be represented as a plain JSON file, which will be parsed and converted into library's internal structures at the Dataset object initialization time. For large datasets that is likely to become prohibitively slow, at which point we will have to introduce an intermediate representation (**IR**) used to store dataset in a more ready-to-consume (and external memory-efficient) format than JSON. 
+
+Conversion of JSON datasets into their **IR**s will ideally happen on a (MapZen) server, so that the dataset arrives to the user's device ready for use without further transformation. Alternatively, transformation can take place on the user's device post-download, via a utility program. 
+
+To account for these alternatives, the transformation code has to be decoupled from the search portion of the library, so that it can packaged for autonomous use on server or post-download.
+ 
+To reduce the footprint on the user's device and, in the case of server-side transformation, the size of transmission, the **IR** should involve compression.
+
+The library should provide some degree of validation of the dataset it is offered.
+
+**IR** has to be versioned. Backward compatibility with older versions of the **IR** should be preserved.
 
 ##Analysis and transformation
 Examine libpostal for its usefulness in (international) postal address normalization. Evaluate resource requirements and quality. 
@@ -374,7 +407,7 @@ For naive implementation, create a simplistic tokenizer akin to [https://www.ela
 
 ##Exception Handling wrapper
 This C++ wrapper mirrors the original API in an exception-free manner. All methods will have specifier ```throw()```. 
-In each method, the call to the corresponding original API in a try/catch clause. Use separate catch clauses for Pelopia-originated exceptions (if a part of the design). Use catch-all for all other exceptions. Convert exceptions into an enumeration of error codes. Return error code from each wrapper method. If the original method returns a value, make it an output parameter (the last).  
+Each method will consist of a call to the corresponding method from the original API in a try/catch clause. Use separate catch clauses for Pelopia-originated exceptions (if a part of the design). Use catch-all for all other exceptions. Convert exceptions into an enumeration of error codes. Return error code from each wrapper method. If the original method returns a value, make it an output parameter (the last).  
 
 Save the text of the latest exception, provide a method to access it. Clear the saved exception text before any new call into the original API.
 
@@ -408,18 +441,49 @@ Use RapidJSON for JSON related needs.
 
 ###C++
 
+	#include <iostream>
+	
+	#include <mapzen/pelopia.h>
+	
+	using namespace Mapzen :: Pelopia;
+	using namespace Mapzen :: GeoJSON;
+	using namespace std;
+	
+	void main ()
+	{
+		Dataset ds ( "NYC.pelopia" );
+		
+		Response resp = ds . Search ( "Mapzen", LatLon ( 40.7507545, -73.9939152 ) );
+	
+		for ( unsigned int i = 0 ; i < resp . Count (); ++ i )
+	    {
+	        Id id;
+	        MatchQuality score;
+	        resp . Get ( i, id, score );
+	        Feature place = ds . Place ( id );
+	        cout << ( i + 1 ) << " ( " << score << " ) " 
+	             << ": " <<  place . Name () << ", " << place . Address () 
+	             << endl;
+	    }
+	}
+
 ###Java
+**TBD**
 
 ###Python
+**TBD**
 
 ###Node.js
+**TBD**
 
 ###Objective C
+**TBD**
 
 ###Swift
+**TBD**
 
 ##Testing
-Develop test-first, unless there is a good reason not to,  
+Develop test-first, unless there is a good reason not to.   
 
 ###Unit testing
 Use Catch unit testing framework for writing C++ unit tests.
@@ -429,7 +493,7 @@ Find a test coverage tool.
 For acceptance testing, capture some results from Pelias searches and, making sure the location criteria match, use them as expected results. Be prepared to update the expected results as Pelias evolves. Develop a simple acceptance test runner akin to Pelias's.
 
 ###Performance testing
-Find a representative large dataset (NYC?) for performance measurement and experimentation.
+Find a representative large dataset (NYC?) for performance measurement and experimentation. Identify an execution profiling tool for every platform.  Make sure to measure speed on fully optimized release builds.   
 
 ###Integration testing
 Create an integration test suite for every end-user API (C++, Android/Java, OSX/Swift/ObjC). The test have to be written against the API and exercise the subsystems end-to-end. Breadth of coverage is not as important.
@@ -441,19 +505,19 @@ Investigate the C++ standard supported by all tool chains in use, document, set 
 Use MS Visual Studio 2013.
 
 ###Linux (gcc/Makefiles)
-Make sure any code developed for MS Visual Studio also works on Linux, by using continuous integration. Use g++ as the Linux compiler. 
+Make sure any code developed for MS Visual Studio also works on Linux, by using continuous integration. Use g++ as the Linux compiler. Identify the minimum supported version of gcc.
 
 ###CMake
 Investigate using CMake to generate MS Visual Studio project files and makefiles.
 
 ##Continuous integration
-Find a CI tool that supports both MSVS and Linux makefiles. At a later stage, add CI for Android, iOS, OSX. 
+Ideally, use one CI tool that supports MSVS projects (Windows) and gmake makefiles (Linux/OSX), as well as Python and node.js. At a later stage, add CI for Android, iOS.  
 
 ##Documentation
-Use doxygen for auto-generated documentation. Maintain README.md at the top level for (links to) everything else.
+Use doxygen for auto-generated documentation on the declarations included in the API. Maintain README.md at the top level for (links to) everything else.
 
 ##Delivery
-The deliverable is a set of header files and a static library.
+The deliverable is a set of header files, a static library and documentation.
  
 Being the open source project, always consider that the deliverables can be built from sources. As an easier-to-use alternative, create .msi (.zip?) file for Windows, .rpm (tar?) for Linux, .jar for Android, ? for iOS/OSX.
 Where required, the installation package has to include the C++ run time support library.
