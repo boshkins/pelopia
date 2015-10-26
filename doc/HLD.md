@@ -3,7 +3,7 @@
 
 ##Overview
 
-This document describes high level design for Pelias, a native, offline geocoding solution over a relatively small set of data (e.g. a city). 
+This document describes high level design for Pelopia, a native, offline geocoding solution over a relatively small set of data (e.g. a city). 
 The design is based on requirements specified in [doc/requirements.md](https://github.com/boshkins/pelopia/blob/master/doc/requirements.md)
 
 The structure of the document is as follows:
@@ -18,6 +18,7 @@ The structure of the document is as follows:
 
 ##References
 1. C.Gormley, Z.Tong. Elasticsearch: The Definitive Guide. [https://www.elastic.co/guide/en/elasticsearch/guide/master/index.html](https://www.elastic.co/guide/en/elasticsearch/guide/master/index.html)
+2. Filip Janiszewski. A Lightweight Logger for C++ [http://www.drdobbs.com/cpp/a-lightweight-logger-for-c/240147505](http://www.drdobbs.com/cpp/a-lightweight-logger-for-c/240147505)
 
 ##API operations
 
@@ -37,14 +38,18 @@ All externally visible C++ declarations of the API will be contained in the name
 
 	struct LatLon {
 		Coordinate lat;	// range -180 .. 180 
-		Coordinate lon; // range -180 .. 360; the extended range is used to handle discontinuity at the 180 meridian
-	};
+		Coordinate lon; // range -180 .. 360; the extended range is used to handle discontinuity
+	};					//  at the 180 meridian
  
 	class BoundingBox {
 	public:
-		// all constructors will recalculate right longitude to above 180 degrees if the 180 meridian lies within the box
+		// all constructors will recalculate right longitude to above 180 degrees if the 180 
+		//  meridian lies within the box
 		BoundingBox ( LatLon p_topLeft, LatLon p_bottomRight );
-		BoundingBox ( Coordinate latLeft, Coordinate latRight, Coordinate lonBottom, Coordinate lonTop );
+		BoundingBox ( Coordinate latLeft, 
+					  Coordinate latRight, 
+					  Coordinate lonBottom, 
+					  Coordinate lonTop );
 	
 		const Coordinate Left() const;
 		const Coordinate Right() const;
@@ -84,7 +89,8 @@ All externally visible C++ declarations of the API will be contained in the name
 		// the number of entries ion the response
 		usigned int Count() const;
 
-		// access location Id and its score by its position in the collection, 0 <= index < Count
+		// access location Id and its score by its position in the collection, 
+		//		0 <= index < Count
 		// returns false if index is outside of [ 0, Count ) 
 		bool Get ( unsigned int index, & Id id, & MatchQuality score ) const;
 
@@ -92,8 +98,8 @@ All externally visible C++ declarations of the API will be contained in the name
 		// returns InvalidId if index is outside of [ 0, Count )
 		Id Get ( unsigned int index ) const;
 
-		// access the best-scoring completion for the corresponding entry's text, if requested in 
-		// the original query (i.e. Dataset :: Autocomplete called)
+		// access the best-scoring completion for the corresponding entry's text, 
+		// if requested in the original query (i.e. Dataset :: Autocomplete called)
 		// returns empty string if index is outside of [ 0, Count )
 		string Autocomplete ( unsigned int index ) const; 
 	}
@@ -103,7 +109,7 @@ All externally visible C++ declarations of the API will be contained in the name
 	class Dataset {
 
 	public:
-		Dataset ( const char* location ); // file or URL ?
+		Dataset ( const char* filename ); 
  
 		Response Search ( const char* text, 
 						  const LatLon& scope,
@@ -142,6 +148,16 @@ All externally visible C++ declarations of the API will be contained in the name
 		class Feature
 		{	// This is a GeoJSON Feature object corresponding to a single Location 
 		public:
+			typedef enum 
+			{
+				Property_Layer,
+				Property_Name,
+				Property_Text,
+				Property_Address,
+				// ... etc - keep synchronized with the access methods below
+			} PropertyId;
+
+		public:
 
 			const GeometryObject* Geometry() const;
 
@@ -167,7 +183,9 @@ All externally visible C++ declarations of the API will be contained in the name
 
 			const Geometry& CenterPoint () const;
 
-			// how to represent Shape ?
+			// TBD: represent Shape
+
+			const char* GetProperty ( PropertyId ) const;
 
 			unsigned int CategoryCount () const;
 			const char* Category ( unsigned int index ) const; 
@@ -186,25 +204,35 @@ Write side can analyze the structure and choose alternative representations or s
 
 The usefulness of naive implementations is in their simplicity, allowing for a rapid development of a functionally complete system. The quickly-built system then can be used to explore functionality issues, as well as investigated for performance bottlenecks. The feedback from performance study will drive replacement of naive designs with more performant ones. Care must be taken to insulate the rest of the systems from the details of naive/efficient designs, which is achieved through the use of interfaces.
 
-Since the target language is C++, interfaces are modeled by abstract classes. 
+Since the implementation language is C++, interfaces are modeled by abstract classes. Alternatively, use Pimpl idiom to hide implementation details.
 
 ###Data:
 **Data**: a sequence of GeoJSON-derived objects. 
 A naive implementation would use an STL vector of in-memory GeoJSON::Location objects.
 
-	class Data {
+	class Data 
+	{
 	public:
 		virtual const GeoJSON::Location& Get ( Id ) const = 0;
+		virtual size_t Count () const = 0;
 	};
 
 A more memory-efficient representation would store serialized objects in a byte buffer (in memory or on disk) and involve an index:
 
-**Index**: an array of offsets into data buffer; subscript is the object Id. Size of an Id value depends on the total size of the **Data**; 4 bytes should be enough but consider packing into less than 32 bits.   
+**Index**: an array of offsets into data buffer; subscript is the object Id. Size of an Id value depends on the total size of the **Data**; 4 bytes should be enough but consider packing into less than 32 bits.
+
+	class Index 
+	{
+	public:
+		typedef size_t Offset;
+
+	public:
+		virtual Offset Get ( Id ) const = 0;
+	};   
 
 The memory efficiency comes at the cost of reduced speed of access to individual objects, which can be addressed by adding a cache of inflated Location objects.
 
 The byte buffer itself, if it resides on disk, can be split into blocks and cached.  
-
 
 GeoJSON::Location objects returned by the Data interface do not have to be fully inflated. Since in many cases only selected properties of a given object will be of interest to the calling code, it may be beneficial to implement lazy access to properties. As another option, Location objects and/or their properties can be represented by references to corresponding portions of the data buffer. With that in mind, GeoJSON::Location should be fully abstract or at least opaque (using Pimpl pattern).
 
@@ -253,7 +281,9 @@ The low level design should allow easy switching between representations. Some e
 **PointLonIndex**: a similar structure using longitude as the coordinate. 
 
 ####LatLon search support
-For simplicity, we will represent a circular area specified as ( **LatLon**, R ) with a square ( left = Lon-R/2, top = Lat+R/2, right = Lon+R/2, bottom = Lat-R/2 ). This expands the area by about 20% but allows to use the same fast location filtering as for bounding boxes. The potential extraneous hits will have distance to the center of the circle greater than R and can be filtered out later, possibly as late as the scoring stage.   
+For simplicity, we will represent a circular area specified as ( **LatLon**, R ) with a square ( left = Lon-R/2, top = Lat+R/2, right = Lon+R/2, bottom = Lat-R/2 ). This expands the area by about 20% but allows to use the same fast location filtering as for bounding boxes. The potential extraneous hits will have distance to the center of the circle greater than R and can be filtered out later, possibly as late as the scoring stage.
+
+Note that LatLon search with the default radius covers the entire dataset. Filtering in this case can be bypassed, or the corresponding filter can be represented with a bitmap with all bits set to 1.   
 
 ####Locations with point geometry
 Initially, all locations in the dataset will be represented as a single point ( centroid for lines and polygons, see [https://en.wikipedia.org/wiki/Centroid](https://en.wikipedia.org/wiki/Centroid ). 
@@ -291,23 +321,58 @@ For location with shaped geometry, we will represent the object's location with 
 
 ####Geo distance calculations
 
-The distance between two points will be calculated assuming that the world is flat, which should be sufficient for relatively small areas. As an option, we can consider implementing more computationally expensive but more accurate Haversine formula [https://en.wikipedia.org/wiki/Haversine_formula](https://en.wikipedia.org/wiki/Haversine_formula). For now, the distance is calculated as
+The distance between two points will be calculated assuming that the world is flat, which should be sufficient for relatively small areas. As an option, we can consider implementing more computationally expensive but more accurate Haversine formula [https://en.wikipedia.org/wiki/Haversine_formula](https://en.wikipedia.org/wiki/Haversine_formula). For now, the distance is calculated using the Pythagorean theorem:
 
-	Distance ( LatLon ( lat1, lon1 ), LatLon ( lat2, lon2 ) ) = sqrt ( ( lat2 - lat1 ) ** 2 + ( lon2 - lon1 ) ** 2 )  
+	Distance ( LatLon ( lat1, lon1 ), LatLon ( lat2, lon2 ) ) = 
+											sqrt ( ( lat2 - lat1 ) ** 2 + ( lon2 - lon1 ) ** 2 )  
 
 ####Full text search support
-**TextIndex**: a prefix tree with all words extracted from all relevant properties of all objects in the dataset, after analysis and transformation. Payload is the set of tuples: object Id, property Id, position inside property (offset/length; for multi-value properties also index of the sub-property).
+**TextIndex**: a prefix tree with all words extracted from all relevant properties of all objects in the dataset, after analysis and transformation. Payload is a set of tuples: object Id, property Id, position inside property (offset/length; for multi-value properties also index of the sub-property).
  
 	Make a Location Filter
-	Normalize query: remove stop words, break into terms (or use an address normalization library)
+	Normalize query: remove stop words, break into terms (or use an address normalization 
+		library)
 	for each term in the query
 		locate the tree node corresponding to the term
 		for each object attached to the node
 			Objects found in the tree are immediately screened using the filter. 
 		The ones passing the filter are added to the result set  
-	Repeat for all words, merging result sets (the same object can come in from multiple terms). 
+	Repeat for all words, merging result sets (the same object can come in from multiple terms; 
+		same term can be used more than once in the same object). 
 	For each location in the result set, calculate its score. 
-	Sort the result set by decreasing score. 
+	Sort the result set by decreasing score.
+
+The interfaces:
+
+	class TextIndex 
+	{
+	public:
+		class TermUse   
+		{
+		public:
+			virtual Id ObjectId () const = 0;
+			virtual GeoJSON :: PropertyId PropertyId () const = 0;
+			virtual void Position ( size_t& index, size_t& offset, size_t& length ) const = 0; 
+		}
+
+		class Payload // naive: vector < TermUse >
+		{	// the collection is sorted by increasing object Id, then by increasing index, then by increasing position  
+			virtual size_t Count () const = 0;
+			virtual const TermUse* GetTerm ( size_t index ) const = 0;
+		}
+
+		class Node
+		{
+		public:
+			virtual const Payload& GetPayload () const = 0;
+
+			virtual size_t ChildrenCount () const = 0;
+			virtual const Node* GetChild ( size_t index ) const = 0;
+		};
+
+	public:
+		virtual const Node& Locate ( const string& prefix ) const = 0;
+	}
 
 ####Autocomplete support
 Caching!! Hold on to the text+location of the previous call, results of search on full terms and position in prefix tree for the last word (complete or not). Keep results of the partial search separate from the full terms'. Destroy if the new text (sans last term) or location are different
@@ -324,7 +389,7 @@ Caching!! Hold on to the text+location of the previous call, results of search o
 		use the save subtree's root as the new full term, add to the memorized result set. 
 		Do a new partial search with the new last word.   
 
-	................................... incomplete
+	**................................... incomplete**
 
 ###Scoring
 
@@ -332,7 +397,7 @@ The scoring approach combines Term Frequency / Inverse document frequency with g
 
 There should be a mechanism for overriding the library's internal scoring function. The user-supplied function should have access to all the inputs that the internal one does (i.e values used in the formulas below).
 
-To limit the amount of calculations, scoring is applied after applying location filtering.
+To limit the amount of calculations, scoring is done after applying location filtering.
 
 ####Full text search
 
@@ -340,36 +405,40 @@ For each term in a tokenized full text query, calculate its WEIGHT:
 
 Term Frequency:
  
-	TF = sqrt ( # of appearances of the term in the address )
+	TF = sqrt ( # of appearances of the term in the field )
  
 Inverse document frequency: the more often the term appears in the dataset, the less relevant it is. This value can be pre-calculated for every term in the dataset, at the cost of increased memory footprint of the dataset. 
 
-	IDF = 1 + log ( totalAddresses / ( 1 + # of addresses containing the term ) )   
+	IDF = 1 + log ( totalFields / ( 1 + # of fields containing the term ) )   
 
-Field-length norm: the more words in the query, the lower relevance of words in it:
+NOTE. Currently, by "field" in this section we understand "address". However, that may include other GeoJSIN fields, depending on the answer to the
+# **Big question: which properties are we searching on?**  #
 
-	FIELD_NORM = 1 / sqrt ( # of terms in the address )
+
+Field-length norm: the more words in the field, the lower relevance of words in it:
+
+	FIELD_NORM = 1 / sqrt ( # of terms in the field )
 
 The weight of the term in a query:
 
 	WEIGHT = TF * IDF * FIELD_NORM
 
 
-For each address in the candidate set created by filtering, calculate its SCORE in relation to the current query:
+For each field in the candidate set created by filtering, calculate its SCORE in relation to the current query:
 
 Query Normalization factor:
 
 	QUERY_NORM = 1 / sqrt ( sum ( IDF of each term in the query ) )
 
-Query coordination: rewards addresses that contain a higher percentage of query terms.
+Query coordination: rewards fields that contain a higher percentage of query terms.
 
-	COORD = # of matching terms in the address / total terms in the query
+	COORD = # of matching terms in the field / total terms in the query
 
 Scoring function, similar to Lucene's Practical Scoring Function:
 
 	SCORE = QUERY_NORM * COORD * sum ( WEIGHT,  for each term in query ) 
 
-In addition, boost score of addresses where the order of found terms matches the order of terms in the query. **TBD**
+In addition, boost score of fields where the order of found terms matches the order of terms in the query. Details **TBD**
 
 ####Geo scoring
 The purpose of the geo-scoring stage is twofold. 
@@ -387,11 +456,13 @@ Second, geographical distance between the location and the center of the search 
 	} 
 
 ###Dataset
-Originally, dataset will be represented as a plain JSON file, which will be parsed and converted into library's internal structures at the Dataset object initialization time. For large datasets that is likely to become prohibitively slow, at which point we will have to introduce an intermediate representation (**IR**) used to store dataset in a more ready-to-consume (and external memory-efficient) format than JSON. 
+Originally, dataset will be represented as a plain JSON file, which will be parsed and converted into library's internal structures at the Dataset object initialization time. For large datasets that is likely to become prohibitively slow, at which point we will have to introduce an intermediate representation (**IR**) used to store dataset in a more ready-to-consume (and external memory-efficient) format than JSON.
 
 Conversion of JSON datasets into their **IR**s will ideally happen on a (MapZen) server, so that the dataset arrives to the user's device ready for use without further transformation. Alternatively, transformation can take place on the user's device post-download, via a utility program. 
 
 To account for these alternatives, the transformation code has to be decoupled from the search portion of the library, so that it can packaged for autonomous use on server or post-download.
+
+Note that address normalization is a part of converting dataset from MapZen-created GeoJSON into Pelopia's internal structures. 
  
 To reduce the footprint on the user's device and, in the case of server-side transformation, the size of transmission, the **IR** should involve compression.
 
@@ -404,6 +475,8 @@ Examine libpostal for its usefulness in (international) postal address normaliza
 Try to use the fact that normally the native language of the map is determined by the dataset's region.
 
 For naive implementation, create a simplistic tokenizer akin to [https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-edgengram-tokenizer.html](https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-edgengram-tokenizer.html) .
+
+The same address normalization logic has to be applied to addresses as part of the dataset preparation process and to queries before search.
 
 ##Exception Handling wrapper
 This C++ wrapper mirrors the original API in an exception-free manner. All methods will have specifier ```throw()```. 
@@ -420,26 +493,37 @@ The C+++ API can be used directly (see Exception handling below for a special ca
 This wrapper consists of C global functions (prefixed with MzPel) directly derived from the original C++ APIl. The functions themselves can be implemented in C++ (make sure to specify "C" linkage). They will convert parameter and return values between C and corresponding C++ datatypes (e.g. char[]and string, void* and object). They will convert C++ exceptions into C return codes, perhaps by using the exception handling wrapper. 
 
 ###Android bindings 
-Use JNI. Create an interface class, use javah to generate C header, implement header against the C++ API, possibly wrapped into the exception handling wrapper.
+Use JNI. Create an interface class equivalent to the C++ API, use javah to generate a C header, implement the functions declared in the header against the C++ API (possibly wrapped into the exception handling wrapper). 
+Details **TBD**. 
 
 ####Python bindings
-Make a Python facade. Details TBD. 
+Make a Python facade. Details **TBD**. 
 
 ####Node.js bindings
-TBD
+**TBD**
 
 ####Objective C / Swift bindings
-TBD
+**TBD**
 
 ##Logging
 Support several levels of levels of logging (Debug, Info, Warning, Error). Provide a way to send log messages into a user-supplied logger. In the log messages, include time stamp, identify the source (class/method or function, filename, source line). Avoid multi-line and overly long messages.
 
+Follow the design described [here](http://www.drdobbs.com/cpp/a-lightweight-logger-for-c/240147505)
+
 ##JSON library interface, JSON library
 Use RapidJSON for JSON related needs.
+
+##Multithreading
+On platforms with multiple CPU cores, multithreading can be a valuable performance boosting tool. In the design presented here, multiple threads can be beneficially used in two tasks: filtering and scoring. The general approach would be creating a pool of worker threads consuming location Ids off a common queue and saving results (ID + boolean for filtering, Id + double for scoring) in an output structure. Access to both input and output structures has to be thread safe. Use STL mutex-based locking for access synchronization.  
+
+CPU cores are a valuable resource and the use of multithreading inside a third-party library may not be welcomed by the primary application.
+Expose the mutlithreading switch, as well as the number of worker threads as a configuration parameter. For the default value of the number of threads,  use the number of CPU cores [reported by system](http://www.cprogramming.com/snippets/source-code/find-the-number-of-cpu-cores-for-windows-mac-or-linux), minus 2. If there are 2 cores or fewer, turn multithreading off.
 
 ##Examples
 
 ###C++
+
+Using Search:
 
 	#include <iostream>
 	
@@ -487,7 +571,7 @@ Develop test-first, unless there is a good reason not to.
 
 ###Unit testing
 Use Catch unit testing framework for writing C++ unit tests.
-Find a test coverage tool. 
+Find a test coverage tool. Start [here](http://open-tube.com/10-code-coverage-tools-c-c/) or [here](https://www.quora.com/What-are-some-code-coverage-tools-for-C++)
 
 ###Acceptance testing
 For acceptance testing, capture some results from Pelias searches and, making sure the location criteria match, use them as expected results. Be prepared to update the expected results as Pelias evolves. Develop a simple acceptance test runner akin to Pelias's.
@@ -496,7 +580,7 @@ For acceptance testing, capture some results from Pelias searches and, making su
 Find a representative large dataset (NYC?) for performance measurement and experimentation. Identify an execution profiling tool for every platform.  Make sure to measure speed on fully optimized release builds.   
 
 ###Integration testing
-Create an integration test suite for every end-user API (C++, Android/Java, OSX/Swift/ObjC). The test have to be written against the API and exercise the subsystems end-to-end. Breadth of coverage is not as important.
+Create an integration test suite for every end-user API (C++, Android/Java, OSX/Swift/ObjC). The test have to be written against the API and exercise the subsystems end-to-end. Breadth of coverage is not as important. For a testing framework, use Catch for C/C++, JUnit for Java, XCTest for Objective C and Swift. 
 
 ##Build system
 Investigate the C++ standard supported by all tool chains in use, document, set corresponding options across all compilers.
