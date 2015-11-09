@@ -47,3 +47,5 @@ Windows/
 *.suo
 *.user
 *.sdf
+Debug/
+Release/

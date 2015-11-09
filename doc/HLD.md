@@ -92,7 +92,7 @@ All externally visible C++ declarations of the API will be contained in the name
 		// access location Id and its score by its position in the collection, 
 		//		0 <= index < Count
 		// returns false if index is outside of [ 0, Count ) 
-		bool Get ( unsigned int index, & Id id, & MatchQuality score ) const;
+		bool Get ( unsigned int index, Id & id, MatchQuality & score ) const;
 
 		// access location Id by position in the collection, 0 <= index < Count
 		// returns InvalidId if index is outside of [ 0, Count )
@@ -440,6 +440,9 @@ Scoring function, similar to Lucene's Practical Scoring Function:
 
 In addition, boost score of fields where the order of found terms matches the order of terms in the query. Details **TBD**
 
+###Reverse search support
+**TBD**
+
 ####Geo scoring
 The purpose of the geo-scoring stage is twofold. 
 
@@ -519,6 +522,29 @@ On platforms with multiple CPU cores, multithreading can be a valuable performan
 CPU cores are a valuable resource and the use of multithreading inside a third-party library may not be welcomed by the primary application.
 Expose the mutlithreading switch, as well as the number of worker threads as a configuration parameter. For the default value of the number of threads,  use the number of CPU cores [reported by system](http://www.cprogramming.com/snippets/source-code/find-the-number-of-cpu-cores-for-windows-mac-or-linux), minus 2. If there are 2 cores or fewer, turn multithreading off.
 
+##Directory structure
+
+The contents of directory **pelopia/**:
+
+	build/
+		make/ 		- makefiles for gmake
+		MSVS2013/ 	- solution/project files for MS Visual Studio 2013
+		... 		- other build systems (Android, Cmake, XCode etc)
+	doc/			- documentation
+		html/		- doxygen-generated HTML documentation
+		*.md		- other documents, in MarkDown
+	examples/
+		C++/		- C++ examples
+		C/			- C examples
+		...			- other languages
+	inc/
+		pelopia/	- pelopia headers
+		*.h 		- 3d party headers, as needed
+	src/
+		test/		- unit tests
+		*.cpp 		- library code
+	acceptance/		- acceptance tests
+
 ##Examples
 
 ###C++
@@ -527,29 +553,30 @@ Using Search:
 
 	#include <iostream>
 	
-	#include <mapzen/pelopia.h>
+	#include <pelopia/Dataset.h>
+	#include <pelopia/GeoJSON.h>
 	
-	using namespace Mapzen :: Pelopia;
-	using namespace Mapzen :: GeoJSON;
+	using namespace Mapzen::Pelopia;
 	using namespace std;
 	
-	void main ()
+	void main()
 	{
-		Dataset ds ( "NYC.pelopia" );
-		
-		Response resp = ds . Search ( "Mapzen", LatLon ( 40.7507545, -73.9939152 ) );
+		Dataset ds("NYC.pelopia");
 	
-		for ( unsigned int i = 0 ; i < resp . Count (); ++ i )
-	    {
-	        Id id;
-	        MatchQuality score;
-	        resp . Get ( i, id, score );
-	        Feature place = ds . Place ( id );
-	        cout << ( i + 1 ) << " ( " << score << " ) " 
-	             << ": " <<  place . Name () << ", " << place . Address () 
-	             << endl;
-	    }
+		Response resp = ds.Search("Mapzen", LatLon(40.7507545, -73.9939152));
+	
+		for (unsigned int i = 0; i < resp.Count(); ++i)
+		{
+			Id id;
+			MatchQuality score;
+			resp.Get(i, id, score);
+			GeoJSON::Feature place = ds.Place(id);
+			cout << (i + 1) << " ( " << score << " ) "
+				<< ": " << place.Name() << ", " << place.Address()
+				<< endl;
+		}
 	}
+
 
 ###Java
 **TBD**
@@ -606,24 +633,54 @@ The deliverable is a set of header files, a static library and documentation.
 Being the open source project, always consider that the deliverables can be built from sources. As an easier-to-use alternative, create .msi (.zip?) file for Windows, .rpm (tar?) for Linux, .jar for Android, ? for iOS/OSX.
 Where required, the installation package has to include the C++ run time support library.
 
+Contents of a Pelopia installation directory:
+
+	pelopia/
+		inc/		- header files
+		lib/		- binary libraries
+		doc/		- HTML documentation
+		examples/
+			C++/
+			C/
+			...		- other languages, as needed
+
+An alternative installation structure, for Unix-like systems with root access, would be
+
+	/usr/local/
+		include/pelopia/		- headers
+		lib/pelopia/			- libraries
+		share/doc/pelopia/		- HTML documentation
+					/examples	- examples
 
 ##Stories 
 
+1. Logging to a file
+1. Logging to a client-supplied stream
+ 
+1. Use a dataset from Mapzen-produced JSON
+  
 1. Search using one term text using BoundingBox, naive implementation
 1. Search using one term text using LatLon, naive implementation
 1. Search using multiple term text, naive implementation
 1. Search using one incomplete term text, naive implementation 
 1. Search using multiple complete term and one incomplete term text, naive implementation
+2. Autocomplete, naive
+2. Reverse search, naive
 
+1. Use a dataset locally converted from Mapzen-produced JSON
+2.   
 1. Search using one term text using BoundingBox, optimized implementation
 1. Search using one term text using LatLon, optimized implementation
 1. Search using multiple term text, optimized implementation
 1. Search using one incomplete term text, optimized implementation 
 1. Search using multiple complete term and one incomplete term text, optimized implementation
+2. Autocomplete, optimized
+2. Reverse search, optimized
 
-1. Search using a dataset locally converted from Pelias-produced JSON  
-1. Search using a dataset converted from dataset downloaded from a Pelopia-specific Mapzen endpoint
-  
+1. Use a dataset downloaded from a Pelopia-specific Mapzen endpoint in Pelopia format
+
+1. Exception handling wrapper
+ 
 1. Search through a C API
 1. Search through a Java API
 1. Search through a Python API
@@ -631,24 +688,43 @@ Where required, the installation package has to include the C++ run time support
 1. Search through an Objective C API
 1. Search through a Swift API
 
-1. Installation and operation on Windows 
-1. Installation and operation on Linux 
-1. Installation and operation on Android 
-1. Installation and operation on OSX 
-1. Installation and operation on iOS 
+1. Download/build from sources in a clean environment on Windows 
+1. Download/build from sources in a clean environment on Linux 
+1. Download/build from sources in a clean environment on Android 
+1. Download/build from sources in a clean environment on OSX 
+1. Download/build from sources in a clean environment on iOS 
 
-1. Search using one category  
-1. Search using multiple categories  
+1. Installation package for Windows 
+1. Installation package for Linux 
+1. Installation package for Linux, root mode 
+1. Installation package for Android 
+1. Installation package for OSX 
+1. Installation package for iOS 
 
 ##Milestones
 
-1. Unit testing framework is operational
-1. Acceptance testing framework is operational
-1. CI is operational, per platform
-1. Windows API is feature complete (download from Mapzen, C++ API working)
-1. Linux API is feature complete (download from Mapzen, C++ API working)
-1. Android API is feature complete (download from Mapzen, Android API working)
-1. OSX API is feature complete (download from Mapzen, C++ API working)
-1. iOS API is feature complete (download from Mapzen, Objective C or Swift C API working)
-2. Performance milestones met, per platform
- 
+2. Search with LatLon works
+2. Search with BoundingBox works
+3. Autocomplete works
+3. Reverse search works
+
+1. API is feature complete (JSON downloaded from Mapzen, C++ API working), per platform
+
+2. API works using datasets in optimized format prepared locally, all platforms
+2. API works using datasets in optimized format prepared on server, all platforms
+
+3. C API
+3. Java API 
+3. Python API 
+3. Node.js API 
+3. Swift API 
+3. Objective C API 
+  
+1. Performance milestones met, per platform
+
+##Non-story tasks
+1. Set up unit testing framework
+1. Set up acceptance testing framework
+1. Set up CI, per platform/language
+2. Set up Doxygen
+

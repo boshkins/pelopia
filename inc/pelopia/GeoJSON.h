@@ -1,5 +1,5 @@
-#ifndef pelopia_geojson_h
-#define pelopia_geojson_h
+#ifndef Mapzen_Pelopia_GeoJSON_h
+#define Mapzen_Pelopia_GeoJSON_h
 
 /*
 * Copyright notice: TBD
@@ -9,9 +9,11 @@
 * Pelopia :: GeoJSON, declarations related to GeoJSON objects
 */
 
-#include <pelopia/coordinate.h>
+#include <pelopia/Pelopia.h>
 
-namespace MapZen
+#include <string>
+
+namespace Mapzen
 {
 	namespace Pelopia
 	{
@@ -23,7 +25,7 @@ namespace MapZen
 			/**
 			* GeoJSON Geometry. For now, only Point in Geographic Coordinate Reference System
 			*/
-			class GeometryObject
+			class Geometry
 			{	//  
 			public:
 				Coordinate Latitude() const;
@@ -34,9 +36,9 @@ namespace MapZen
 			* GeoJSON Feature object corresponding to a single Location
 			*/
 			class Feature
-			{	
+			{
 			public:
-				const GeometryObject* Geometry() const;
+				const Geometry* GetGeometry() const;
 
 				// Feature access, based on https://github.com/pelias/schema/blob/master/mappings/document.js
 
@@ -65,8 +67,10 @@ namespace MapZen
 				const char* Category(unsigned int index) const;
 				// maybe add CategoryId to work with enum-like categories ?
 
-				string Stringify() const;
+				std::string Stringify() const;
 			};
+
+		}
 
 	}
 }

@@ -1,8 +1,4 @@
-#include "pelopia.h"
+#include <pelopia/Pelopia.h>
 
-using namespace pelopia;
+using namespace Mapzen :: Pelopia;
 
-bool pelopia::Search()
-{
-	return false;
-}

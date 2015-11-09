@@ -138,10 +138,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\inc\pelopia.h" />
+    <ClInclude Include="..\..\..\inc\pelopia\BoundingBox.h" />
+    <ClInclude Include="..\..\..\inc\pelopia\Dataset.h" />
+    <ClInclude Include="..\..\..\inc\pelopia\Distance.h" />
+    <ClInclude Include="..\..\..\inc\pelopia\GeoJSON.h" />
+    <ClInclude Include="..\..\..\inc\pelopia\Pelopia.h" />
+    <ClInclude Include="..\..\..\inc\pelopia\Response.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\src\pelopia.cpp" />
+    <ClCompile Include="..\..\..\src\Pelopia.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
