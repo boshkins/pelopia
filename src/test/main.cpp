@@ -6,11 +6,16 @@ using namespace std;
 
 #include <pelopia/Pelopia.h>
 
+#define LIBPOSTAL 0
+
+#if LIBPOSTAL
 #include <../../libpostal/src/libpostal.h>
+#endif
 
 using namespace Mapzen :: Pelopia;
 using namespace std;
 
+#if LIBPOSTAL
 TEST_CASE("basic call to libpostal") 
 {
 	char en[] = "en";
@@ -45,18 +50,24 @@ TEST_CASE("basic call to libpostal")
 		free(strings);
 	}
 }
+#endif
+
 
 int main( int argc, char* const argv[] )
 {
+#if LIBPOSTAL
 	// global setup...
     if (!libpostal_setup()) {
         exit(EXIT_FAILURE);
     }
+#endif
 
 	int result = Catch::Session().run( argc, argv );
 
+#if LIBPOSTAL
 	// global clean-up...
     libpostal_teardown();
+#endif
 
 	return result;
 }
