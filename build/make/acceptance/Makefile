@@ -14,7 +14,7 @@ clean:
 	@rm -rf $(OBJDIR) $(EXE)
 
 $(BINDIR)/acceptance: $(OBJ) $(LIBDIR)/libpelopia.a
-	g++ -o $@ $^ 
+	$(CXX) -o $@ $^ 
 
 accept: makedirs $(EXE)
 	$(EXE)
