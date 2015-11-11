@@ -13,7 +13,7 @@
 #include <pelopia/Response.h>
 #include <pelopia/Distance.h>
 #include <pelopia/BoundingBox.h>
-#include <pelopia/GeoJSON.h>
+#include <pelopia/GeocodeJSON.h>
 
 namespace Mapzen
 {
@@ -24,6 +24,9 @@ namespace Mapzen
 
 		public:
 			Dataset(const char* filename);
+
+			Response Search(const char* text, 
+				Format format = { DefaultResults });
 
 			Response Search(const char* text,
 				const LatLon& scope,
@@ -42,7 +45,7 @@ namespace Mapzen
 				const Distance& radius,
 				Format format = { AllResults });
 
-			GeoJSON :: Feature Place(Id) const;
+			GeocodeJSON :: Feature Place(Id) const;
 		};
 
 	}
