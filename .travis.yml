@@ -1,1 +1,3 @@
+language: cpp
+
 script: make -C build/make/make test 
