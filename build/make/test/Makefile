@@ -19,6 +19,6 @@ $(LIBDIR)/libpelopia.a:
 	$(MAKE) --no-print-directory -C ..
 
 $(BINDIR)/test-pelopia: $(OBJ) $(LIBDIR)/libpelopia.a
-	g++ -o $@ $^ /usr/local/lib/libpostal.a
+	$(CXX) -o $@ $^ /usr/local/lib/libpostal.a
 
 .PHONY: std pelopia clean

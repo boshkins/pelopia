@@ -10,5 +10,5 @@ matrix:
           packages: ['g++-5']
       env: COMPILER=g++-5
       
-script: make -C build/make test 
+script: make CXX=$COMPILER -C build/make test 
       
