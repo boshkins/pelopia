@@ -1,3 +1,14 @@
 language: cpp
 
+matrix:
+  include:
+    - os: linux
+      compiler: gcc
+      addons:
+        apt:
+          sources: ['ubuntu-toolchain-r-test']
+          packages: ['g++-5']
+      env: COMPILER=g++-5
+      
 script: make -C build/make test 
+      
