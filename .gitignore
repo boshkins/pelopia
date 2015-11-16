@@ -44,7 +44,7 @@ Temporary Items
 
 # Build artefacts and local customization
 Windows/
-*.suo
+linux-*/
 *.user
 *.sdf
 Debug/

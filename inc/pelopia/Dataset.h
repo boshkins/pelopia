@@ -10,10 +10,12 @@
 * Project repository: https://github.com/boshkins/pelopia
 */
 
+#include <stdexcept>
+
 #include <pelopia/Response.h>
 #include <pelopia/Distance.h>
 #include <pelopia/BoundingBox.h>
-#include <pelopia/GeoJSON.h>
+#include <pelopia/GeocodeJSON.h>
 
 namespace Mapzen
 {
@@ -23,26 +25,31 @@ namespace Mapzen
 		class Dataset {
 
 		public:
-			Dataset(const char* filename);
+			Dataset ( const char* filename );
 
-			Response Search(const char* text,
+			Response Search ( const char* text, 
+				Format format = { DefaultResults } );
+
+			Response Search ( const char* text,
 				const LatLon& scope,
 				const Distance& radius = Distance ( Distance::Miles, 0 ),
-				Format format = { DefaultResults });
+				Format format = { DefaultResults } );
 
-			Response Search(const char* text,
+			Response Search ( const char* text,
 				const BoundingBox& scope,
-				Format format = { DefaultResults });
+				Format format = { DefaultResults } );
 
-			Response Autocomplete(const char* text, const LatLon& scope);
+			Response Autocomplete ( const char* text, const LatLon& scope );
 
-			Response Autocomplete(const char* text, const BoundingBox& scope);
+			Response Autocomplete ( const char* text, const BoundingBox& scope );
 
-			Response Reverse(const LatLon& point,
+			Response Reverse ( const LatLon& point,
 				const Distance& radius,
-				Format format = { AllResults });
+				Format format = { AllResults } );
 
-			GeoJSON :: Feature Place(Id) const;
+            // The reference is valid until the next call to Place()
+            // Use Feature::Clone() to make a caller-owned copy
+			const GeocodeJSON :: Feature& Place ( Id ) const throw ( std :: logic_error );
 		};
 
 	}
