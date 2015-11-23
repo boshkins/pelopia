@@ -4,8 +4,40 @@
 
 #include <sstream>
 
+#include <pelopia/BoundingBox.h>
+
 using namespace Mapzen :: Pelopia :: GeocodeJSON;
+using namespace Mapzen :: Pelopia;
 using namespace std;
+
+TEST_CASE ( "GeocodeJSON::Geometry" )
+{
+    Geometry g ( 1.0, 2.0 );
+    
+    SECTION ( "ctor" )
+    {
+        REQUIRE ( 1.0 == g . Latitude () );
+        REQUIRE ( 2.0 == g . Longitude () );
+    }
+    SECTION ( "equality")
+    {
+        REQUIRE ( Geometry ( 1.0, 2.0 ) == g );
+        REQUIRE ( Geometry ( 2.0, 1.0 ) != g );
+    }
+    SECTION ( "setters" )
+    {
+        g . SetLatitude ( 3.0 );
+        g . SetLongitude ( 4.0 );
+        REQUIRE ( Geometry ( 3.0, 4.0 ) == g );
+    }
+}
+
+TEST_CASE ( "GeocodeJSON::Geometry default ctor" )
+{
+    Geometry g;
+    REQUIRE ( Geometry ( 0, 0 ) == g );
+}
+
 
 TEST_CASE ( "GeocodeJSON_Reader_Rapid_DOM ctor empty stream" ) 
 {
@@ -49,28 +81,42 @@ TEST_CASE ( "GeocodeJSON_Reader_Rapid_DOM ctor one object no features" )
     REQUIRE ( 0 == reader . NextValue () );
 }
 
-TEST_CASE ( "GeocodeJSON_Reader_Rapid_DOM ctor one object one features" ) 
-{
-    istringstream in ( Header + 
+static const string FeatureComplete = /* all properties present */
         "       {\n"
         "           \"type\": \"Feature\",\n"
         "           \"properties\": {\n"
         "               \"id\": \"3744735381\",\n"
         "               \"layer\": \"venue\",\n"
         "               \"source\": \"osm\",\n"
+        "               \"accuracy\": 20,\n"
+        "               \"confidence\": 0.8,\n"
+        "               \"label\": \"Mapzen, San Francisco, CA\",\n"
         "               \"name\": \"Mapzen\",\n"
         "               \"housenumber\": \"155\",\n"
         "               \"street\": \"9th Street\",\n"
-        "               \"postalcode\": \"94103\",\n"
-        "               \"country_a\": \"USA\",\n"
-        "               \"country\": \"United States\",\n"
-        "               \"region\": \"California\",\n"
-        "               \"region_a\": \"CA\",\n"
+        "               \"postcode\": \"94103\",\n"
+        "               \"city\": \"San Francisco\",\n"
+        "               \"district\": \"Civic Center\",\n"
         "               \"county\": \"San Francisco County\",\n"
-        "               \"locality\": \"San Francisco\",\n"
-        "               \"neighbourhood\": \"Civic Center\",\n"
-        "               \"label\": \"Mapzen, San Francisco, CA\"\n"
+        "               \"region\": \"California\",\n"
+        "               \"region_abbr\": \"CA\",\n"
+        "               \"country\": \"United States\",\n"
+        "               \"country_abbr\": \"USA\",\n"
+        "               \"admin\": {\n"
+        "                   \"level1\": \"admin level 1\",\n"
+        "                   \"level2\": \"admin level 2\",\n"
+        "                   \"level3\": \"admin level 3\",\n"
+        "                   \"level4\": \"admin level 4\",\n"
+        "                   \"level5\": \"admin level 5\",\n"
+        "                   \"level6\": \"admin level 6\",\n"
+        "                   \"level7\": \"admin level 7\",\n"
+        "                   \"level8\": \"admin level 8\",\n"
+        "                   \"level9\": \"admin level 9\",\n"
+        "                   \"level10\": \"admin level 10\"\n"
+        "               },\n"
+        "               \"geohash\" : \"Ehugh5oofiToh9aWe3\"\n"
         "           },\n"
+        "           \"bbox\": [-1.2, -3.4, 5.6, 7.8],\n"
         "           \"geometry\": {\n"
         "               \"type\": \"Point\",\n"
         "               \"coordinates\": [\n"
@@ -79,9 +125,42 @@ TEST_CASE ( "GeocodeJSON_Reader_Rapid_DOM ctor one object one features" )
         "               ]\n"
         "           }\n"
         "       }\n"
-        + Footer
-    );
+;
+        
+TEST_CASE ( "GeocodeJSON_Reader_Rapid_DOM ctor one object one feature" ) 
+{
+    istringstream in ( Header + FeatureComplete + Footer );
     Reader_Rapid_DOM reader ( in );
     const Feature* f = reader . NextValue ();
     REQUIRE ( 0 != f );
+    
+    SECTION ( "GetGeometry" ) 
+    {
+        const Geometry* g = f -> GetGeometry();
+        REQUIRE ( 0 != g );
+        REQUIRE ( -122.413596   == g -> Longitude () );
+        REQUIRE ( 37.775693     == g -> Latitude () );
+    }
+    SECTION ( "Id" )            { REQUIRE ( string ( "3744735381" )                 == f -> Id () ); }
+    SECTION ( "layer" )         { REQUIRE ( string ( "venue" )                      == f -> Layer () ); }
+    SECTION ( "source" )        { REQUIRE ( string ( "osm" )                        == f -> Source () ); }
+    SECTION ( "accuracy" )      { REQUIRE ( 20u                                     == f -> AccuracyMeters () ); }
+    SECTION ( "confidence" )    { REQUIRE ( 0.8                                     == f -> Confidence () ); }
+    SECTION ( "label" )         { REQUIRE ( string ( "Mapzen, San Francisco, CA" )  == f -> Label () ); }
+    SECTION ( "name" )          { REQUIRE ( string ( "Mapzen" )                     == f -> Name () ); }
+    SECTION ( "housenumber" )   { REQUIRE ( string ( "155" )                        == f -> HouseNumber () ); }
+    SECTION ( "street" )        { REQUIRE ( string ( "9th Street" )                 == f -> Street () ); }
+    SECTION ( "postcode" )      { REQUIRE ( string ( "94103" )                      == f -> Postcode () ); }
+    SECTION ( "city" )          { REQUIRE ( string ( "San Francisco" )              == f -> City () ); }
+    SECTION ( "district" )      { REQUIRE ( string ( "Civic Center" )               == f -> District () ); }
+    SECTION ( "county" )        { REQUIRE ( string ( "San Francisco County" )       == f -> County () ); }
+    SECTION ( "region" )        { REQUIRE ( string ( "California" )                 == f -> Region () ); }
+    SECTION ( "regionabbr" )    { REQUIRE ( string ( "CA" )                         == f -> RegionAbbr () ); }
+    SECTION ( "country" )       { REQUIRE ( string ( "United States" )              == f -> Country () ); }
+    SECTION ( "country_abbr" )  { REQUIRE ( string ( "USA" )                        == f -> CountryAbbr () ); }
+    SECTION ( "admin[1]" )      { REQUIRE ( string ( "admin level 1" )              == f -> Admin ( 1 ) ); }
+    SECTION ( "admin[7]" )      { REQUIRE ( string ( "admin level 7" )              == f -> Admin ( 7 ) ); }
+    SECTION ( "geohash" )       { REQUIRE ( string ( "Ehugh5oofiToh9aWe3" )         == f -> Geohash () ); }
+    SECTION ( "bbox" )          { REQUIRE ( BoundingBox ( -1.2, -3.4, 5.6, 7.8)     == *f -> GetBoundingBox () ); }
 }
+//TODO: optional properties absent

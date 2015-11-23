@@ -11,6 +11,7 @@
 */
 
 #include <cstdint>
+#include <stdexcept>
 
 namespace Mapzen
 {
@@ -28,13 +29,35 @@ namespace Mapzen
 
 		typedef double Coordinate; // degrees; underlying datatype is likely to change
 
-		struct LatLon 
+        // class LatLon:
+        // Latitude in the range of -90 .. 90
+        // Longitude in the range -180 .. 360; the extended range may be used to handle discontinuity
+        //                                      at the 180 meridian
+        // the constructor and setters will throw if latitude / longitude is outside of its range
+		class LatLon 
 		{
-			LatLon ( Coordinate p_lat, Coordinate p_lon );
+        public:
+			LatLon ( Coordinate p_lat, Coordinate p_lon ) throw ( std :: logic_error ); 
 
-			Coordinate lat;	// range -180 .. 180 
-			Coordinate lon; // range -180 .. 360; the extended range is used to handle discontinuity
-		};					//  at the 180 meridian
+			Coordinate Latitude  () const { return m_lat; }
+			Coordinate Longitude () const { return m_lon; }
+            
+			void SetLatitude  ( Coordinate )  throw ( std :: logic_error );
+			void SetLongitude ( Coordinate );
+
+            bool operator == ( const LatLon& p_that ) const 
+            {
+                return m_lat == p_that . m_lat && m_lon == p_that . m_lon;
+            }
+            bool operator != ( const LatLon& p_that ) const 
+            {
+                return ! ( *this == p_that );
+            }
+            
+        private:
+			Coordinate m_lat;	
+			Coordinate m_lon; 
+        };
 
 		typedef uint64_t Id;
 		const Id InvalidId = 0;

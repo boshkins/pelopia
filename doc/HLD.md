@@ -38,13 +38,13 @@ const ResultCount DefaultResults = 10;
 typedef double Coordinate; // degrees; underlying datatype is likely to change
 
 struct LatLon {
-	Coordinate lat;	// range -180 .. 180
+	Coordinate lat;	// range -90 .. 90
 	Coordinate lon; // range -180 .. 360; the extended range is used to handle discontinuity
 };					//  at the 180 meridian
 
 class BoundingBox {
 public:
-	// all constructors will recalculate right longitude to above 180 degrees if the 180
+	// all constructors will recalculate longitudes to 0 .. 360 if the 180
 	//  meridian lies within the box
 	BoundingBox ( LatLon p_topLeft, LatLon p_bottomRight );
 	BoundingBox ( Coordinate latLeft,

@@ -16,31 +16,47 @@ namespace Mapzen
 {
 	namespace Pelopia
 	{
-
 		class BoundingBox {
 		public:
-			// all constructors will recalculate right longitude to above 180 degrees if the 180 
+			// all constructors will recalculate longitudes to 0 .. 360 if the 180 
 			//  meridian lies within the box
-			BoundingBox(LatLon p_topLeft, LatLon p_bottomRight);
-			BoundingBox(Coordinate latLeft,
-				Coordinate latRight,
-				Coordinate lonBottom,
-				Coordinate lonTop);
+			BoundingBox (); // all 0s
+			BoundingBox ( LatLon p_topLeft, LatLon p_bottomRight );
+			BoundingBox (
+                Coordinate lonLeft,
+				Coordinate latBottom,
+				Coordinate lonRight,
+				Coordinate latTop );
 
-			const Coordinate Left() const;
-			const Coordinate Right() const;
-			const Coordinate Top() const;
-			const Coordinate Bottom() const;
+			Coordinate Left() const     { return m_topLeft . Longitude (); }
+			Coordinate Bottom() const   { return m_bottomRight . Latitude (); }
+			Coordinate Right() const    { return m_bottomRight . Longitude (); }
+			Coordinate Top() const      { return m_topLeft . Latitude (); }
 
-			const LatLon& TopLeft() const;
-			const LatLon& BottomRight() const;
+			const LatLon& TopLeft() const { return m_topLeft; }
+			const LatLon& BottomRight() const { return m_bottomRight; }
+            
+            bool operator == ( const BoundingBox& p_that ) const 
+            {
+                return m_topLeft == p_that . m_topLeft && m_bottomRight == p_that . m_bottomRight;
+            }
+            bool operator != ( const BoundingBox& p_that ) const 
+            {
+                return ! ( *this == p_that );
+            }
+            
+			void SetLeft    ( Coordinate );
+			void SetBottom  ( Coordinate );
+			void SetRight   ( Coordinate );
+			void SetTop     ( Coordinate );
 
+			void SetTopLeft ( const LatLon& ) const;
+			void SetBottomRight ( const LatLon& ) const;
+            
 		private:
-			LatLon topLeft;
-			LatLon bottomRight;
+			LatLon m_topLeft;
+			LatLon m_bottomRight;
 		};
-
-
 	}
 }
 

@@ -9,7 +9,7 @@
 * Pelopia :: GeocodeJSON, declarations related to GeocodeJSON objects
 */
 
-#include <pelopia/Pelopia.h>
+#include <pelopia/BoundingBox.h>
 
 #include <string>
 
@@ -26,10 +26,33 @@ namespace Mapzen
 			* GeocodeJSON Geometry. For now, only Point in Geographic Coordinate Reference System
 			*/
 			class Geometry
-			{	//  
+			{	  
 			public:
-				Coordinate Latitude() const;
-				Coordinate Longitude() const;
+                Geometry () : m_lat ( 0 ), m_lon ( 0 )
+                {
+                }
+                Geometry ( Coordinate p_lat, Coordinate p_lon ) : m_lat ( p_lat ), m_lon ( p_lon )
+                {
+                }
+                
+				Coordinate Latitude() const { return m_lat; }
+				Coordinate Longitude() const { return m_lon; }
+                
+                bool operator == ( const Geometry& p_that ) const 
+                {
+                    return m_lat == p_that . m_lat && m_lon == p_that . m_lon;
+                }
+                bool operator != ( const Geometry& p_that ) const 
+                {
+                    return ! ( *this == p_that );
+                }
+                
+				void SetLatitude ( Coordinate p_lat ) { m_lat = p_lat; }
+				void SetLongitude ( Coordinate p_lon ) { m_lon = p_lon; }
+                
+            private:
+                Coordinate m_lat;
+                Coordinate m_lon;
 			};
 
 			/**
@@ -37,7 +60,11 @@ namespace Mapzen
 			*/
 			class Feature
 			{
+            public:
+                virtual ~Feature() = 0;
+                
 			public:
+                virtual const BoundingBox* GetBoundingBox() const = 0; // optional
 				virtual const Geometry* GetGeometry() const = 0;
 
 				// Access to Feature object's properties, based on 
@@ -51,7 +78,7 @@ namespace Mapzen
                 
 				virtual const char* Source () const = 0; // optional
 				virtual uint32_t AccuracyMeters () const = 0; // optional
-				virtual double Confidence () const = 0; // 0.0 .. 1.0
+				virtual double Confidence () const = 0; // 0.0 .. 1.0; optional
                 
 				virtual const char* Label () const = 0; 
 				virtual const char* Name () const = 0; // "recommended" but still optional
@@ -71,9 +98,7 @@ namespace Mapzen
                 
 				virtual const char* Geohash () const = 0; // optional
                 
-				virtual const Geometry& CenterPoint() const = 0;
-
-				virtual std::string Stringify() const = 0;
+                virtual std::string Stringify() const = 0;
                 
                 // create a copy of this object, to be deleted by the caller
                 virtual Feature* Clone() const = 0;

@@ -10,6 +10,164 @@ using namespace Mapzen :: Pelopia :: GeocodeJSON;
 using namespace std;
 using namespace rapidjson;
 
+class Reader_Rapid_DOM :: FeatureDOM : public Feature
+{
+public:    
+    FeatureDOM ( Value& p_value ) 
+    : m_value ( p_value )
+    {
+    }
+    virtual ~FeatureDOM () 
+    {
+    }
+
+public:    
+    virtual const BoundingBox* GetBoundingBox() const 
+    { 
+        const Value& bb = GetMember ( "bbox" );
+        if ( ! bb . IsArray () || bb . Size () != 4 )
+        {
+            throw std :: logic_error ( "Property \"bbox\" is not an array of 4" ); 
+        }
+        m_bbox . SetLeft   ( bb [ 0 ] . GetDouble () );
+        m_bbox . SetBottom ( bb [ 1 ] . GetDouble () );
+        m_bbox . SetRight  ( bb [ 2 ] . GetDouble () );
+        m_bbox . SetTop    ( bb [ 3 ] . GetDouble () );
+        return & m_bbox; 
+    }
+
+    virtual const Geometry* GetGeometry() const 
+    { 
+        const Value& g = GetMember ( "geometry" );
+        if ( ! g . IsObject () )
+        {
+            throw std :: logic_error ( "Property \"geometry\" is not an object" ); 
+        }
+        const Value& coords = GetMember ( g, "coordinates" );
+        if ( ! coords . IsArray () || coords . Size () != 2 )
+        {
+            throw std :: logic_error ( "Property \"coordinates\" is not an array of 2" ); 
+        }
+        m_geometry . SetLongitude ( coords [ 0 ] . GetDouble () );
+        m_geometry . SetLatitude ( coords [ 1 ] . GetDouble ());
+        return & m_geometry; 
+    } 
+
+    virtual const char* Id () const     { return GetStringProperty ( "id" ); }
+    virtual const char* Layer () const  { return GetStringProperty ( "layer" ); }
+    virtual const char* Source () const { return GetStringProperty ( "source" ); } 
+    virtual uint32_t AccuracyMeters () const 
+    { 
+        const Value& g = GetMember ( "properties" );
+        if ( ! g . IsObject () )
+        {
+            throw std :: logic_error ( "Property \"properties\" is not an object" ); 
+        }
+        const Value& v = GetMember ( g, "accuracy" );
+        if ( ! v . IsUint () )
+        {
+            throw std :: logic_error ( string ( "Property \"" ) + "accuracy" +"\" is not an unsigned integer" ); 
+        }
+        return v . GetUint (); 
+    }
+    virtual double Confidence () const 
+    { 
+        const Value& g = GetMember ( "properties" );
+        if ( ! g . IsObject () )
+        {
+            throw std :: logic_error ( "Property \"properties\" is not an object" ); 
+        }
+        const Value& v = GetMember ( g, "confidence" );
+        if ( ! v . IsDouble () )
+        {
+            throw std :: logic_error ( string ( "Property \"" ) + "confidence" +"\" is not a number" ); 
+        }
+        return v . GetDouble (); 
+    }
+    
+    virtual const char* Label () const  { return GetStringProperty ( "label" ); }
+    virtual const char* Name () const   { return GetStringProperty ( "name" ); }
+    
+    virtual const char* HouseNumber () const    { return GetStringProperty ( "housenumber" ); }
+    virtual const char* Street () const         { return GetStringProperty ( "street" ); }
+    virtual const char* Postcode () const       { return GetStringProperty ( "postcode" ); }
+    virtual const char* City () const           { return GetStringProperty ( "city" ); }
+    virtual const char* District () const       { return GetStringProperty ( "district" ); }
+    virtual const char* County () const         { return GetStringProperty ( "county" ); }
+    virtual const char* Region () const         { return GetStringProperty ( "region" ); }
+    virtual const char* RegionAbbr () const     { return GetStringProperty ( "region_abbr" ); }
+    virtual const char* Country () const        { return GetStringProperty ( "country" ); }
+    virtual const char* CountryAbbr () const    { return GetStringProperty ( "country_abbr" ); }
+    
+    virtual const char* Admin ( unsigned int p_level ) const 
+    { 
+        const Value& g = GetMember ( "properties" );
+        if ( ! g . IsObject () )
+        {
+            throw std :: logic_error ( "Property \"properties\" is not an object" ); 
+        }
+        const Value& adm = GetMember ( g, "admin" );
+        switch ( p_level )
+        {
+            case 1:     return GetStringProperty ( adm, "level1" );
+            case 2:     return GetStringProperty ( adm, "level2" );
+            case 3:     return GetStringProperty ( adm, "level3" );
+            case 4:     return GetStringProperty ( adm, "level4" );
+            case 5:     return GetStringProperty ( adm, "level5" );
+            case 6:     return GetStringProperty ( adm, "level6" );
+            case 7:     return GetStringProperty ( adm, "level7" );
+            case 8:     return GetStringProperty ( adm, "level8" );
+            case 9:     return GetStringProperty ( adm, "level9" );
+            case 10:    return GetStringProperty ( adm, "level10" );
+            default:    return 0;
+        }
+    } 
+    
+    virtual const char* Geohash () const { return GetStringProperty ( "geohash" ); }
+    
+    virtual std::string Stringify() const { return string(); }
+    
+    // create a copy of this object, to be deleted by the caller
+    virtual Feature* Clone() const { return 0; }
+    
+private:
+    const Value& GetMember ( const Value& p_val, const char* p_name ) const throw ( std :: logic_error )
+    {
+        Value :: ConstMemberIterator it = p_val . FindMember ( p_name );
+        if ( it == p_val . MemberEnd() )
+        {
+            throw std :: logic_error ( string ( "Property " ) + p_name + " does not exist" );
+        }
+        return it -> value;
+    }
+    const Value& GetMember ( const char* p_name ) const throw ( std :: logic_error )
+    {
+        return GetMember ( m_value, p_name );
+    }
+    const char* GetStringProperty ( const Value& p_val, const char* p_name ) const throw ( std :: logic_error )
+    {
+        if ( ! p_val . IsObject () )
+        {
+            throw std :: logic_error ( "Property \"properties\" is not an object" ); 
+        }
+        const Value& v = GetMember ( p_val, p_name );
+        if ( ! v . IsString () )
+        {
+            throw std :: logic_error ( string ( "Property \"" ) + p_name +"\" is not a character string" ); 
+        }
+        return v . GetString (); 
+    }
+    const char* GetStringProperty ( const char* p_name ) const throw ( std :: logic_error )
+    {
+        return GetStringProperty ( GetMember ( "properties" ), p_name );
+    }
+    
+private:
+    Value& m_value;
+    mutable Geometry    m_geometry;
+    mutable BoundingBox m_bbox;
+};
+
 class Reader_Rapid_DOM :: StlStream // implements concept rapidjson :: Stream using std :: istream
 {
 public:    
@@ -48,11 +206,10 @@ public:
     size_t Tell() 
     { 
         streampos ret = m_in . tellg ();
-        if ( ret == -1 )
+        if ( ret == char_traits<Ch>::eof() )
         {
             ret = 0;
         }
-        cout << "StlStream::Tell(): " << ret << endl;
         return size_t ( ret ); 
     }
 
@@ -77,6 +234,13 @@ Reader_Rapid_DOM :: Reader_Rapid_DOM ( std :: istream& p_in ) throw ( std :: log
         s << "JSON parse error at offset " << m_doc . GetErrorOffset () << " : " << GetParseError_En ( m_doc . GetParseError() );
         throw std :: logic_error ( s . str() ); 
     }
+    m_features = m_doc [ "features" ];
+    if ( ! m_features . IsArray () )
+    {
+        throw std :: logic_error ( "Property \"features\" is not an array" ); 
+    }
+    m_curFeature = 0;
+    m_lastObject = 0;
 }
         
 Reader_Rapid_DOM :: ~Reader_Rapid_DOM ()
@@ -86,6 +250,13 @@ Reader_Rapid_DOM :: ~Reader_Rapid_DOM ()
 const Feature* 
 Reader_Rapid_DOM :: NextValue () throw ( std :: logic_error )
 {
-    return 0;
+    if ( m_curFeature >= m_features . Size() )
+    {
+        return 0;
+    }       
+    delete m_lastObject;
+    m_lastObject = new FeatureDOM ( m_features [ m_curFeature ] );
+    ++m_curFeature;
+    return m_lastObject;
 }
 

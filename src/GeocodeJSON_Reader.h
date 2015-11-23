@@ -28,6 +28,7 @@ namespace GeocodeJSON
         // any exceptions thrown by the underlying stream will be propagated
         // objects not conforming to JSON syntax will throw 
         // objects not conforming to GeocodeJSON will throw 
+        // the returned pointer is valid until the next call to NextValue()
         virtual const Feature* NextValue () throw ( std :: logic_error ) = 0 ; 
     };
     

@@ -9,6 +9,8 @@ clean:
 	rm -rf $(OBJDIR) $(BINDIR)/test-pelopia
 
 SRC = main \
+    pelopia \
+    boundingbox \
     geojson \
 
 #    datanaive \

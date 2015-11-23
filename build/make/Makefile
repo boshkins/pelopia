@@ -11,6 +11,7 @@ include $(TOP)/build/make/Makefile.env
 
 SRC = \
     Pelopia \
+    BoundingBox \
     Dataset \
     GeocodeJSON \
     GeocodeJSON_Reader \

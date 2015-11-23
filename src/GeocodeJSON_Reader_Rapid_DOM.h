@@ -36,11 +36,13 @@ namespace GeocodeJSON
         
     private:
         class StlStream;
+        class FeatureDOM;
         
     private:
         rapidjson :: Document   m_doc;
         rapidjson :: Value      m_features;
-        size_t                  m_curFeature;
+        rapidjson :: SizeType   m_curFeature;
+        FeatureDOM*             m_lastObject;
     };
 }
 }
