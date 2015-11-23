@@ -37,32 +37,55 @@ const ResultCount DefaultResults = 10;
 
 typedef double Coordinate; // degrees; underlying datatype is likely to change
 
-struct LatLon {
-	Coordinate lat;	// range -90 .. 90
-	Coordinate lon; // range -180 .. 360; the extended range is used to handle discontinuity
-};					//  at the 180 meridian
-
-class BoundingBox {
+// class LatLon:
+// Latitude in the range of -90 .. 90
+// Longitude in the range -180 .. 360; the extended range may be used to handle discontinuity
+//                                      at the 180 meridian
+// the constructor and setters will throw if latitude / longitude is outside of its range
+class LatLon 
+{
 public:
-	// all constructors will recalculate longitudes to 0 .. 360 if the 180
+	LatLon ( Coordinate p_lat, Coordinate p_lon ) throw ( std :: logic_error ); 
+
+	Coordinate Latitude  () const;
+	Coordinate Longitude () const;
+    
+	void SetLatitude  ( Coordinate )  throw ( std :: logic_error );
+	void SetLongitude ( Coordinate )  throw ( std :: logic_error );
+}
+            
+class BoundingBox {
+    // All 4-Coordinate calls follow the order
+    // Top - Left - Bottom - Right
+    //
+    // All 2-LatLon calls follow the order
+    // TopLeft - BottomRight
+
+	// all constructors will recalculate longitudes to 180 .. 360 if the 180 
 	//  meridian lies within the box
+	BoundingBox (); // all 0s
 	BoundingBox ( LatLon p_topLeft, LatLon p_bottomRight );
-	BoundingBox ( Coordinate latLeft,
-				  Coordinate latRight,
-				  Coordinate lonBottom,
-				  Coordinate lonTop );
+	BoundingBox (
+		Coordinate latTop, 
+        Coordinate lonLeft,
+		Coordinate latBottom,
+		Coordinate lonRight );
 
-	const Coordinate Left() const;
-	const Coordinate Right() const;
-	const Coordinate Top() const;
-	const Coordinate Bottom() const;
+	Coordinate Top() const;
+	Coordinate Left() const;
+	Coordinate Bottom() const;
+	Coordinate Right() const;
 
-	const LatLon& TopLeft() const;
-	const LatLon& BottomRight() const;
-
-private:
-	LatLon topLeft;
-	LatLon bottomRight;
+	const LatLon& TopLeft() const { return m_topLeft; }
+	const LatLon& BottomRight() const { return m_bottomRight; }
+    
+	// the setters take care of translation of longitude around the 180 meridian, if necessary
+	void SetCoordinates ( const LatLon& p_topLeft,  const LatLon& p_bottomRight );
+	void SetCoordinates ( 
+		Coordinate latTop, 
+		Coordinate lonLeft,
+		Coordinate latBottom,
+		Coordinate lonRight );
 };
 
 class Distance
@@ -105,6 +128,14 @@ public:
 	string Autocomplete ( unsigned int index ) const;
 }
 ```
+
+A note on the discontinuity at the 180 meridian. For bounding boxes that have left border specified as a greater longitude than the right border (e.g. 170 to -170), the right border will be adjusted to the 180..540 area using formula 360 + value (in the example, 190 = 360 + (-170)).
+
+Corresponding logic will have to be implemented in the geo-filtering and distance calculation code.
+
+The setters will allow latitudes with the same adjustment preformed externally, i.e. with the right border > 180 and the left border between ( right - 360 ) and right.
+
+Other attempts to set latitudes outside of -180.. 180 will result in an exception thrown by the methods of class BoundingBox. Same for longitudes outside of -90..90.   
 
 ### API methods
 

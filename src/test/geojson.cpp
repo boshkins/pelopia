@@ -78,7 +78,7 @@ TEST_CASE ( "GeocodeJSON_Reader_Rapid_DOM ctor one object no features" )
 {
     istringstream in ( Header + Footer );
     Reader_Rapid_DOM reader ( in );
-    REQUIRE ( 0 == reader . NextValue () );
+    REQUIRE ( nullptr == reader . NextValue () );
 }
 
 static const string FeatureComplete = /* all properties present */
@@ -132,12 +132,12 @@ TEST_CASE ( "GeocodeJSON_Reader_Rapid_DOM ctor one object one feature" )
     istringstream in ( Header + FeatureComplete + Footer );
     Reader_Rapid_DOM reader ( in );
     const Feature* f = reader . NextValue ();
-    REQUIRE ( 0 != f );
+    REQUIRE ( nullptr != f );
     
     SECTION ( "GetGeometry" ) 
     {
         const Geometry* g = f -> GetGeometry();
-        REQUIRE ( 0 != g );
+        REQUIRE ( nullptr != g );
         REQUIRE ( -122.413596   == g -> Longitude () );
         REQUIRE ( 37.775693     == g -> Latitude () );
     }
@@ -161,6 +161,66 @@ TEST_CASE ( "GeocodeJSON_Reader_Rapid_DOM ctor one object one feature" )
     SECTION ( "admin[1]" )      { REQUIRE ( string ( "admin level 1" )              == f -> Admin ( 1 ) ); }
     SECTION ( "admin[7]" )      { REQUIRE ( string ( "admin level 7" )              == f -> Admin ( 7 ) ); }
     SECTION ( "geohash" )       { REQUIRE ( string ( "Ehugh5oofiToh9aWe3" )         == f -> Geohash () ); }
-    SECTION ( "bbox" )          { REQUIRE ( BoundingBox ( -1.2, -3.4, 5.6, 7.8)     == *f -> GetBoundingBox () ); }
+    SECTION ( "bbox" )          
+    { 
+        const BoundingBox* bb = f -> GetBoundingBox ();
+        REQUIRE ( nullptr != bb );
+        REQUIRE ( BoundingBox ( 7.8, -1.2, -3.4, 5.6 ) == *bb ); 
+    }
 }
-//TODO: optional properties absent
+
+static const string OptionalAbsent = /* mandatory properties only */
+        "       {\n"
+        "           \"type\": \"Feature\",\n"
+        "           \"properties\": {\n"
+        "               \"id\": \"3744735381\",\n"
+        "               \"layer\": \"venue\",\n"
+        "               \"region_abbr\": \"CA\"\n"
+        "           },\n"
+        "           \"geometry\": {\n"
+        "               \"type\": \"Point\",\n"
+        "               \"coordinates\": [\n"
+        "                   -122.413596,\n"
+        "                   37.775693\n"
+        "               ]\n"
+        "           }\n"
+        "       }\n"
+;
+
+TEST_CASE ( "GeocodeJSON_Reader_Rapid_DOM ctor one object no optinal properties" ) 
+{
+    istringstream in ( Header + OptionalAbsent + Footer );
+    Reader_Rapid_DOM reader ( in );
+    const Feature* f = reader . NextValue ();
+    REQUIRE ( nullptr != f );
+    
+    SECTION ( "GetGeometry" ) 
+    {
+        const Geometry* g = f -> GetGeometry();
+        REQUIRE ( nullptr != g );
+        REQUIRE ( -122.413596   == g -> Longitude () );
+        REQUIRE ( 37.775693     == g -> Latitude () );
+    }
+    SECTION ( "Id" )            { REQUIRE ( string ( "3744735381" ) == f -> Id () ); }
+    SECTION ( "layer" )         { REQUIRE ( string ( "venue" )      == f -> Layer () ); }
+    SECTION ( "source" )        { REQUIRE ( nullptr                 == f -> Source () ); }
+    SECTION ( "accuracy" )      { REQUIRE ( 0                       == f -> AccuracyMeters () ); }
+    SECTION ( "confidence" )    { REQUIRE ( 0                       == f -> Confidence () ); }
+    SECTION ( "label" )         { REQUIRE ( nullptr                 == f -> Label () ); }
+    SECTION ( "name" )          { REQUIRE ( nullptr                 == f -> Name () ); }
+    SECTION ( "housenumber" )   { REQUIRE ( nullptr                 == f -> HouseNumber () ); }
+    SECTION ( "street" )        { REQUIRE ( nullptr                 == f -> Street () ); }
+    SECTION ( "postcode" )      { REQUIRE ( nullptr                 == f -> Postcode () ); }
+    SECTION ( "city" )          { REQUIRE ( nullptr                 == f -> City () ); }
+    SECTION ( "district" )      { REQUIRE ( nullptr                 == f -> District () ); }
+    SECTION ( "county" )        { REQUIRE ( nullptr                 == f -> County () ); }
+    SECTION ( "region" )        { REQUIRE ( nullptr                 == f -> Region () ); }
+    SECTION ( "regionabbr" )    { REQUIRE ( string ( "CA" )         == f -> RegionAbbr () ); }
+    SECTION ( "country" )       { REQUIRE ( nullptr                 == f -> Country () ); }
+    SECTION ( "country_abbr" )  { REQUIRE ( nullptr                 == f -> CountryAbbr () ); }
+    SECTION ( "admin[1]" )      { REQUIRE ( nullptr                 == f -> Admin ( 1 ) ); }
+    SECTION ( "admin[7]" )      { REQUIRE ( nullptr                 == f -> Admin ( 7 ) ); }
+    SECTION ( "geohash" )       { REQUIRE ( nullptr                 == f -> Geohash () ); }
+    SECTION ( "bbox" )          { REQUIRE ( nullptr                 == f -> GetBoundingBox () ); }
+}
+

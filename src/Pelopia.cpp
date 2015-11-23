@@ -9,7 +9,7 @@ static const Coordinate MinLatitude = -90.0;
 static const Coordinate MaxLatitude = 90.0;
 
 static const Coordinate MinLongitude = -180.0;
-static const Coordinate MaxLongitude = 360.0;
+static const Coordinate MaxLongitude = 180.0 + 360.0;
 
 static
 void
@@ -35,6 +35,11 @@ CheckLongitude ( Coordinate p_lon ) throw ( std :: logic_error )
     }
 }
 
+LatLon :: LatLon ()
+: m_lat ( 0 ), m_lon ( 0 )
+{
+}
+
 LatLon :: LatLon ( Coordinate p_lat, Coordinate p_lon ) throw ( std :: logic_error )
 : m_lat ( p_lat ), m_lon ( p_lon )
 {
@@ -50,7 +55,7 @@ LatLon :: SetLatitude  ( Coordinate p_lat )  throw ( std :: logic_error )
 }
 
 void 
-LatLon :: SetLongitude ( Coordinate p_lon )
+LatLon :: SetLongitude ( Coordinate p_lon )  throw ( std :: logic_error )
 {
     CheckLongitude ( p_lon );
     m_lon = p_lon;

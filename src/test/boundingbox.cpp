@@ -11,16 +11,16 @@ TEST_CASE ( "BoundingBox getters" )
     
     SECTION ( "Coordinate" )
     {
-        REQUIRE ( 1.2 == b . Left () );
-        REQUIRE ( 3.4 == b . Bottom () );
-        REQUIRE ( 5.6 == b . Right () );
-        REQUIRE ( 7.8 == b . Top () );
+        REQUIRE ( 1.2 == b . Top () );
+        REQUIRE ( 3.4 == b . Left () );
+        REQUIRE ( 5.6 == b . Bottom () );
+        REQUIRE ( 7.8 == b . Right () );
     }
     
     SECTION ( "LatLon" )
     {
-        REQUIRE ( LatLon ( 7.8, 1.2 ) == b . TopLeft () );
-        REQUIRE ( LatLon ( 3.4, 5.6 ) == b . BottomRight () );
+        REQUIRE ( LatLon ( 1.2, 3.4 ) == b . TopLeft () );
+        REQUIRE ( LatLon ( 5.6, 7.8 ) == b . BottomRight () );
     }
     
     SECTION ( "equality" )
@@ -45,16 +45,35 @@ TEST_CASE ( "BoundingBox default ctor" )
     REQUIRE ( BoundingBox ( 0, 0, 0, 0 ) == b );
 }
 
-TEST_CASE ( "BoundingBox setters" )
+TEST_CASE ( "BoundingBox setter using Coordinates" )
 {
     BoundingBox b;
-    
-    b . SetLeft ( 1.2 );
-    b . SetBottom ( 3.4 );
-    b . SetRight ( 5.6 );
-    b . SetTop ( 7.8 );
+    b . SetCoordinates ( 1.2, 3.4, 5.6, 7.8 );
     REQUIRE ( BoundingBox ( 1.2, 3.4, 5.6, 7.8 ) == b );
 }
 
-//TEST_CASE ( "BoundingBox setters recalculate" )
+TEST_CASE ( "BoundingBox setter using LatLons" )
+{
+    BoundingBox b;
+    b . SetCoordinates ( LatLon ( 1.2, 3.4 ), LatLon ( 5.6, 7.8 ) );
+        REQUIRE ( 1.2 == b . Top () );
+        REQUIRE ( 3.4 == b . Left () );
+        REQUIRE ( 5.6 == b . Bottom () );
+        REQUIRE ( 7.8 == b . Right () );
+            REQUIRE ( BoundingBox ( 1.2, 3.4, 5.6, 7.8 ) == b );
+}
+
+TEST_CASE ( "BoundingBox setter using Coordinates, recalculate right latitudes" )
+{
+    BoundingBox b;
+    b . SetCoordinates ( 1, 160.0, 2, -170 ); // left > right
+    REQUIRE ( BoundingBox ( 1, 160, 2, 360 - 170 ) == b ); // new right = 360 + old right
+}
+TEST_CASE ( "BoundingBox setter using LatLon, recalculate right latitudes" )
+{
+    BoundingBox b;
+    b . SetCoordinates ( LatLon ( 1, 160 ), LatLon ( 2, -170 ) ); // left > right
+    REQUIRE ( BoundingBox ( 1, 160, 2, 360 - 170 ) == b ); // new right = 360 + old right
+}
+
 

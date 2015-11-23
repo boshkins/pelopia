@@ -18,20 +18,26 @@ namespace Mapzen
 	{
 		class BoundingBox {
 		public:
-			// all constructors will recalculate longitudes to 0 .. 360 if the 180 
+            // All 4-Coordinate calls follow the order
+            // Top - Left - Bottom - Right
+            //
+            // All 2-LatLon calls follow the order
+            // TopLeft - BottomRight
+        
+			// all constructors will recalculate longitudes to 0 .. 540 if the 180 
 			//  meridian lies within the box
 			BoundingBox (); // all 0s
-			BoundingBox ( LatLon p_topLeft, LatLon p_bottomRight );
+			BoundingBox ( LatLon p_topLeft, LatLon p_bottomRight )  throw ( std :: logic_error );
 			BoundingBox (
+				Coordinate latTop, 
                 Coordinate lonLeft,
 				Coordinate latBottom,
-				Coordinate lonRight,
-				Coordinate latTop );
+				Coordinate lonRight )  throw ( std :: logic_error );
 
+			Coordinate Top() const      { return m_topLeft . Latitude (); }
 			Coordinate Left() const     { return m_topLeft . Longitude (); }
 			Coordinate Bottom() const   { return m_bottomRight . Latitude (); }
 			Coordinate Right() const    { return m_bottomRight . Longitude (); }
-			Coordinate Top() const      { return m_topLeft . Latitude (); }
 
 			const LatLon& TopLeft() const { return m_topLeft; }
 			const LatLon& BottomRight() const { return m_bottomRight; }
@@ -45,14 +51,14 @@ namespace Mapzen
                 return ! ( *this == p_that );
             }
             
-			void SetLeft    ( Coordinate );
-			void SetBottom  ( Coordinate );
-			void SetRight   ( Coordinate );
-			void SetTop     ( Coordinate );
+			// the setters take care of translation of longitude around the 180 meridian, if necessary
+			void SetCoordinates ( const LatLon& p_topLeft,  const LatLon& p_bottomRight )  throw ( std :: logic_error );
+			void SetCoordinates ( 
+				Coordinate latTop, 
+				Coordinate lonLeft,
+				Coordinate latBottom,
+				Coordinate lonRight )  throw ( std :: logic_error );
 
-			void SetTopLeft ( const LatLon& ) const;
-			void SetBottomRight ( const LatLon& ) const;
-            
 		private:
 			LatLon m_topLeft;
 			LatLon m_bottomRight;

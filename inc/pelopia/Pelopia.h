@@ -31,19 +31,20 @@ namespace Mapzen
 
         // class LatLon:
         // Latitude in the range of -90 .. 90
-        // Longitude in the range -180 .. 360; the extended range may be used to handle discontinuity
+        // Longitude in the range -180 .. 540; the extended range may be used to handle discontinuity
         //                                      at the 180 meridian
         // the constructor and setters will throw if latitude / longitude is outside of its range
 		class LatLon 
 		{
         public:
+			LatLon (); // 0, 0  
 			LatLon ( Coordinate p_lat, Coordinate p_lon ) throw ( std :: logic_error ); 
 
 			Coordinate Latitude  () const { return m_lat; }
 			Coordinate Longitude () const { return m_lon; }
             
 			void SetLatitude  ( Coordinate )  throw ( std :: logic_error );
-			void SetLongitude ( Coordinate );
+			void SetLongitude ( Coordinate ) throw ( std :: logic_error );
 
             bool operator == ( const LatLon& p_that ) const 
             {
