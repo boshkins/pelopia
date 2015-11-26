@@ -26,7 +26,7 @@ TEST_CASE("one term, no location, found")
         MatchQuality score;
         resp.Get(i, id, score);
         
-        GeocodeJSON::Feature place = ds.Place(id);
+        const GeocodeJSON::Feature& place = ds.Place(id);
         REQUIRE ( string ( place . Name () )    . find ( Term ) != string :: npos );
         REQUIRE ( string ( place . Street () )  . find ( Term ) != string :: npos );
         REQUIRE ( string ( place . Label () )   . find ( Term ) != string :: npos );

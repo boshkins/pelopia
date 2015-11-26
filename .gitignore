@@ -49,3 +49,4 @@ linux-*/
 *.sdf
 Debug/
 Release/
+*.d

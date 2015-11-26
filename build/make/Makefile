@@ -23,7 +23,7 @@ SRC = \
 OBJ = $(addprefix $(OBJDIR)/, $(addsuffix .o,$(SRC)))
 
 clean:
-	rm -f $(LIBDIR)/libpelopia.a $(OBJ)
+	rm -rf $(LIBDIR)/libpelopia.a $(OBJDIR)
 	@$(MAKE) --no-print-directory -C test clean
 
 libpelopia: makedirs $(LIBDIR)/libpelopia.a
