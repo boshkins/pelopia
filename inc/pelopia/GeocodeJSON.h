@@ -69,7 +69,7 @@ namespace Mapzen
 
 				// Access to Feature object's properties, based on 
                 // https://github.com/pelias/geocodejson-spec/tree/master/draft
-                // optional propreties return 0/NULL if omitted
+                // optional propreties return 0/nullptr if omitted
                 
                 //TBD: enum PropertyID for generic access to (string) properties
 
