@@ -69,7 +69,9 @@ See [category_map.js](https://github.com/pelias/openstreetmap/blob/master/config
 ####*scope*, *format*:
 Same as above.
 
-#Autocomplete ( *text*, *scope* ) : *Response*
+**NOTE. At this point, category search is not considered for implementation.**
+
+###Autocomplete ( *text*, *scope* ) : *Response*
 
 Similar to Search on a text string. Unlike Search, this operation will be called with incomplete text. It will also be called at a much higher rate than Search and must be sufficiently performant.  
 
@@ -81,10 +83,12 @@ Same as in Search. Format/size is fixed at 10.
 ####*scope*: 
 - radius (specified in miles, kilometers, meters - all should be supported). Optional, unlimited (i.e. covering the entire dataset) by default
 
-###Place ( { *ids* } ) : *Response*
+###Place ( { *ids* } ) : *{ Location }*
 
 ####ids: one or more ID
 Converts specified IDs into corresponding C++ or stringified GeoJSON objects.
+####Location: 
+A C++ representation of GeoJSON object (possibly stringified) 
 
 IDs are returned by other operations of the library (directly or as properties of C++ objects) and are opaque for the user. An ID uniquely identifies an object in its dataset.
 
