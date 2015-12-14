@@ -12,8 +12,9 @@ SRC = main \
     pelopia \
     boundingbox \
     geojson \
-
-#    datanaive \
+    response \
+    datanaive \
+    textindexnaive \
     dataset \
 
 # libpostal

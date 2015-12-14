@@ -17,6 +17,7 @@ SRC = \
     GeocodeJSON_Reader \
     GeocodeJSON_Reader_Rapid_DOM \
     Response \
+    ResponseInternal \
     Data \
     DataNaive \
 

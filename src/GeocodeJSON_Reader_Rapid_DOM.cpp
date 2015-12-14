@@ -295,23 +295,21 @@ Reader_Rapid_DOM :: Reader_Rapid_DOM ( std :: istream& p_in ) throw ( std :: log
         throw std :: logic_error ( "Property \"features\" is not an array" ); 
     }
     m_curFeature = 0;
-    m_lastObject = nullptr;
 }
         
 Reader_Rapid_DOM :: ~Reader_Rapid_DOM ()
 {
 }
         
-const Feature* 
+Feature* 
 Reader_Rapid_DOM :: NextValue () throw ( std :: logic_error )
 {
     if ( m_curFeature >= m_features . Size() )
     {
         return nullptr;
     }       
-    delete m_lastObject;
-    m_lastObject = new FeatureDOM ( m_features [ m_curFeature ] );
+    Feature* ret = new FeatureDOM ( m_features [ m_curFeature ] );
     ++m_curFeature;
-    return m_lastObject;
+    return ret;
 }
 
