@@ -653,6 +653,7 @@ The contents of directory **pelopia/**:
 	examples/
 		C++/		- C++ examples
 		C/			- C examples
+		Python/     - Python examples
 		...			- other languages
 	inc/
 		pelopia/	- externally visible Pelopia headers
@@ -664,6 +665,10 @@ The contents of directory **pelopia/**:
 		*.cpp 		- library code
 		*.h 		- library-internal headers
     acceptance/		- acceptance tests
+    language/       - language bindings/wrappers
+        C/
+        Python/
+        ...
 
 ##Examples
 
