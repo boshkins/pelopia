@@ -14,25 +14,36 @@
 *
 */
 
+#include <vector>
+
 #include "Data.h"
 
 namespace Mapzen
 {
 	namespace Pelopia
 	{
+        namespace GeocodeJSON
+        {
+            class Feature;
+        } 
+        
         class DataNaive : public Data
         {
         public:
-            DataNaive ( const std :: string& filename ) throw ( std :: invalid_argument );
+            // reads from an external GeocodeJSON file using RapidJSON based DOM reader 
+            DataNaive ( const std :: string& filename ) throw ( std :: invalid_argument, std :: logic_error );
             
             virtual ~DataNaive();
             
-            virtual const GeocodeJSON::Feature& Get ( Id ) const;
+            virtual const GeocodeJSON :: Feature& Get ( Id ) const throw ( std :: invalid_argument );
             
             virtual size_t Count () const;
+            
+         private:
+            typedef std :: vector < GeocodeJSON :: Feature* > Features;
+            Features m_features;
         };
     }
 }
 
 #endif
-

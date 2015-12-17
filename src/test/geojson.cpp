@@ -131,7 +131,7 @@ TEST_CASE ( "GeocodeJSON_Reader_Rapid_DOM ctor one object one feature" )
 {
     istringstream in ( Header + FeatureComplete + Footer );
     Reader_Rapid_DOM reader ( in );
-    const Feature* f = reader . NextValue ();
+    Feature* f = reader . NextValue ();
     REQUIRE ( nullptr != f );
     
     SECTION ( "GetGeometry" ) 
@@ -167,6 +167,8 @@ TEST_CASE ( "GeocodeJSON_Reader_Rapid_DOM ctor one object one feature" )
         REQUIRE ( nullptr != bb );
         REQUIRE ( BoundingBox ( 7.8, -1.2, -3.4, 5.6 ) == *bb ); 
     }
+    
+    delete f;
 }
 
 static const string OptionalAbsent = /* mandatory properties only */
@@ -187,7 +189,7 @@ static const string OptionalAbsent = /* mandatory properties only */
         "       }\n"
 ;
 
-TEST_CASE ( "GeocodeJSON_Reader_Rapid_DOM ctor one object no optinal properties" ) 
+TEST_CASE ( "GeocodeJSON_Reader_Rapid_DOM ctor one object no optional properties" ) 
 {
     istringstream in ( Header + OptionalAbsent + Footer );
     Reader_Rapid_DOM reader ( in );
@@ -222,5 +224,7 @@ TEST_CASE ( "GeocodeJSON_Reader_Rapid_DOM ctor one object no optinal properties"
     SECTION ( "admin[7]" )      { REQUIRE ( nullptr                 == f -> Admin ( 7 ) ); }
     SECTION ( "geohash" )       { REQUIRE ( nullptr                 == f -> Geohash () ); }
     SECTION ( "bbox" )          { REQUIRE ( nullptr                 == f -> GetBoundingBox () ); }
+    
+    delete f;
 }
 

@@ -234,6 +234,8 @@ namespace GeocodeJSON {
 }
 ```
 
+A note on handling Unicode: UTF-8 on input (the JSON reader must support; RapidJSON does); internally using UTF-8 encoded byte strings. 
+
 ##Supporting interfaces and algorithms
 
 It is important to note that read time containers are (at least conceptually) immutable, so they are best represented as a buffer loaded into memory without any additional processing.
@@ -251,7 +253,8 @@ A naive implementation would use an STL vector of in-memory GeocodeJSON::Feature
 class Data
 {
 public:
-	virtual const GeocodeJSON::Feature& Get ( Id ) const = 0;
+    // throws invalid_argument if Id is out of range
+	virtual const GeocodeJSON::Feature& Get ( Id ) const throw ( std :: invalid_argument ) = 0;
 	virtual size_t Count () const = 0;
 };
 ```
@@ -388,11 +391,25 @@ The distance between two points will be calculated assuming that the world is fl
 	For each location in the result set, calculate its score.
 	Sort the result set by decreasing score.
 
+The index has two APIs, one for the read side and one for the write side. Each side will be represented by its own class, with the two classes possibly sharing a common representation hidden by the interface.
+
+The write side is used while populating the dataset, either on the server (in which case the index needs to support serialization for transmission), or on the client in the process of converting JSON to Pelopia's own (in-memory or on-disk) formal.
+
 The interfaces:
 
 ```c++
-class TextIndex
-{
+class TextIndexWriter
+{    
+public:
+	virtual AddTermUse ( const string& term, 
+	                     Id object, 
+	                     GeocodeJSON :: PropertyId, 
+	                     size_t offset, 
+	                     size_t length ) = 0;
+};
+
+class TextIndexReader
+{   
 public:
 	class TermUse   
 	{
@@ -400,26 +417,27 @@ public:
 		virtual Id ObjectId () const = 0;
 		virtual GeocodeJSON :: PropertyId PropertyId () const = 0;
 		virtual void Position ( size_t& index, size_t& offset, size_t& length ) const = 0;
-	}
+	};
 
 	class Payload // naive: vector < TermUse >
 	{	// the collection is sorted by increasing object Id, then by increasing index, then by increasing position  
 		virtual size_t Count () const = 0;
-		virtual const TermUse* GetTerm ( size_t index ) const = 0;
-	}
+		virtual const TermUse& GetTermUse ( size_t index ) const throw (index_out_of_bounds) = 0;
+	};
 
 	class Node
-	{
+	{   
 	public:
 		virtual const Payload& GetPayload () const = 0;
 
 		virtual size_t ChildrenCount () const = 0;
-		virtual const Node* GetChild ( size_t index ) const = 0;
+		virtual const Node& GetChild ( size_t index ) const throw (index_out_of_bounds) = 0;
 	};
 
 public:
-	virtual const Node& Locate ( const string& prefix ) const = 0;
-}
+	virtual const Node* Locate ( const string& prefix ) const = 0;
+};
+
 ```
 
 ####Autocomplete support
@@ -635,6 +653,7 @@ The contents of directory **pelopia/**:
 	examples/
 		C++/		- C++ examples
 		C/			- C examples
+		Python/     - Python examples
 		...			- other languages
 	inc/
 		pelopia/	- externally visible Pelopia headers
@@ -646,6 +665,10 @@ The contents of directory **pelopia/**:
 		*.cpp 		- library code
 		*.h 		- library-internal headers
     acceptance/		- acceptance tests
+    language/       - language bindings/wrappers
+        C/
+        Python/
+        ...
 
 ##Examples
 

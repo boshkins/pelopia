@@ -2,21 +2,48 @@
 
 #include <stdexcept>
 
+#include "GeocodeJSON_Reader_Rapid_DOM.h"
+#include "DataNaive.h"
+
 using namespace Mapzen :: Pelopia;
 using namespace std;
 
+///////////// Dataset::Impl
+
+class Dataset::Impl : public DataNaive
+{
+public:
+    Impl(const char* p_filename)
+    :   DataNaive ( p_filename )
+    {
+    }
+    ~Impl()
+    {
+    }
+    
+    Response m_lastResponse;
+};
+
+///////////// Dataset
+
 Dataset :: Dataset ( const char* filename )
 {
-    throw logic_error ( "not implemented" );
+    m_impl = new Impl(filename);
 }            
 
-Response 
+Dataset :: ~Dataset ()
+{
+    delete m_impl;
+}            
+
+const Response&  
 Dataset :: Search ( const char* text, Format format )
 {
-    throw logic_error ( "not implemented" );
+    return m_impl -> m_lastResponse;
 }            
 
-Response 
+//TODO: all the methods below
+const Response&  
 Dataset :: Search ( const char* text,
                     const LatLon& scope,
                     const Distance& radius,
@@ -25,7 +52,7 @@ Dataset :: Search ( const char* text,
     throw logic_error ( "not implemented" );
 }            
 
-Response 
+const Response&  
 Dataset :: Search ( const char* text,
                     const BoundingBox& scope,
                     Format format )
@@ -33,19 +60,19 @@ Dataset :: Search ( const char* text,
     throw logic_error ( "not implemented" );
 }            
     
-Response
+const Response& 
 Dataset :: Autocomplete ( const char* text, const LatLon& scope )
 {
     throw logic_error ( "not implemented" );
 }            
 
-Response 
+const Response&  
 Dataset :: Autocomplete ( const char* text, const BoundingBox& scope )
 {
     throw logic_error ( "not implemented" );
 }            
 
-Response 
+const Response&  
 Dataset :: Reverse ( const LatLon& point,
                      const Distance& radius,
                      Format format )

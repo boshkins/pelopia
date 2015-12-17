@@ -28,7 +28,7 @@ namespace GeocodeJSON
         
         virtual ~Reader_Rapid_DOM ();
         
-        virtual const Feature* NextValue () throw ( std :: logic_error ); 
+        virtual Feature* NextValue () throw ( std :: logic_error ); 
         
     private:
         Reader_Rapid_DOM ( const Reader_Rapid_DOM& );
@@ -42,7 +42,6 @@ namespace GeocodeJSON
         rapidjson :: Document   m_doc;
         rapidjson :: Value      m_features;
         rapidjson :: SizeType   m_curFeature;
-        FeatureDOM*             m_lastObject;
     };
 }
 }
