@@ -13,6 +13,7 @@ SRC = main \
     boundingbox \
     geojson \
     response \
+    distance \
     datanaive \
     textindexnaive \
     dataset \

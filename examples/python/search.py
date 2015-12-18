@@ -1,6 +1,6 @@
-from ctypes import *
+import ctypes
 
-x  = ctypes . pelopia . LoadLibrary ( _path )
+x  = ctypes . cdll . LoadLibrary ( "/home/boshkins/github/pelopia/linux-x86_64-Debug/lib/libpelopia.so" )
 
 
 ds = x.createDataset

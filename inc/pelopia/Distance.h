@@ -23,7 +23,10 @@ namespace Mapzen
 			Distance(Units, double);
 
 			double GetMiles() const;
-			double GetKiloMetres() const;
+			double GetKilometers() const { return m_distanceKm; }
+          
+        private:
+            double m_distanceKm;
 		};
 
 	}
