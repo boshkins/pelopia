@@ -28,9 +28,9 @@ place.restype = ctypes.POINTER(ctypes.c_void_p)
 
 def main():
 	ds = dataset('/home/sergey/Documents/pelopia/src/test/input/one-term.json')
-        resp  = search_1(ds, "Mapzen", LatLon(40.7507545 -73.9939152)) # the required numbers of arguments is six
-        result(resp, i, id, score)
-        place(ds, id)
+        resp  = search_1(ds, "Mapzen", 40.7507, 73.9939, 0, 10) # the required numbers of arguments is six
+        #result(resp, i, id, score)
+        #place(ds, id)
 
 if __name__ == '__main__':
 	main()

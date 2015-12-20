@@ -24,7 +24,7 @@ void *Search_py(void *ds,
     Dataset *ds_c = (Dataset*)ds;
 	Format fmt = { (unsigned int)format };
     
-	return (void*)&(ds_c -> Search(text, LatLon(lat,lon), Distance(Distance::Miles, radius), fmt));
+	return (void*)&(ds_c -> Search(text, LatLon(lat,lon))); /*Distance(Distance::Miles, radius), fmt));*/
 }
 
 bool Get_py(void *resp, unsigned int index, unsigned int *id, double *score)
