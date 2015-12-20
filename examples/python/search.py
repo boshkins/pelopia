@@ -2,8 +2,8 @@ import ctypes
 import os
 
 #try to locate the .so file in the same directory as this file
-_file = '/home/sergey/Documents/pelopia/linux-x86_64-Debug/lib/libpelopia.so'
-#_file = "/home/boshkins/github/pelopia/linux-x86_64-Debug/lib/libpelopia.so"
+#_file = '/home/sergey/Documents/pelopia/linux-x86_64-Debug/lib/libpelopia.so'
+_file = "/home/boshkins/github/pelopia/linux-x86_64-Debug/lib/libpelopia.so"
 _path = os.path.join(*(os.path.split(__file__)[:-1] + (_file,)))
 x  = ctypes . cdll . LoadLibrary ( _path )
 
@@ -27,7 +27,8 @@ place.restype = ctypes.POINTER(ctypes.c_void_p)
 
 
 def main():
-	ds = dataset('/home/sergey/Documents/pelopia/src/test/input/one-term.json')
+#	ds = dataset('/home/sergey/Documents/pelopia/src/test/input/one-term.json')
+	ds = dataset('/home/boshkins/github/pelopia/src/test/input/one-term.json')
         resp  = search_1(ds, "Mapzen", 40.7507, 73.9939, 0, 10) # the required numbers of arguments is six
         #result(resp, i, id, score)
         #place(ds, id)
