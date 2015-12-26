@@ -4,6 +4,7 @@
 
 #include "GeocodeJSON_Reader_Rapid_DOM.h"
 #include "DataNaive.h"
+#include "TextIndexNaive.h"
 
 using namespace Mapzen :: Pelopia;
 using namespace std;
@@ -16,12 +17,33 @@ public:
     Impl(const char* p_filename)
     :   DataNaive ( p_filename )
     {
+        TextIndexNaiveWriter w;
+        // traverse data, add all terms to writer
+        size_t count = Count();
+        for ( size_t i = 0 ; i < count; ++i )
+        {
+            /* TODO: iterate over all searchable properties in Get(i+1), split into terms, normalize, add to w
+            
+            for ( GeocodeJSON :: Feature :: SearchablePropertyId property = GeocodeJSON :: Feature :: Property_begin; 
+                  property < GeocodeJSON :: Feature :: Property_end; 
+                  ++property )
+            {
+                const char* value = Get( i + 1 )->SearchableProperty ( property );
+                if ( value != nullptr )
+                {
+                    
+                }
+            }*/
+        }
+        m_reader = new TextIndexNaiveReader ( w.DetachIndex () );
     }
     ~Impl()
     {
+        delete m_reader;
     }
     
-    Response m_lastResponse;
+    TextIndexNaiveReader*   m_reader;
+    Response                m_lastResponse;
 };
 
 ///////////// Dataset
@@ -39,6 +61,7 @@ Dataset :: ~Dataset ()
 const Response&  
 Dataset :: Search ( const char* text, Format format )
 {
+    
     return m_impl -> m_lastResponse;
 }            
 

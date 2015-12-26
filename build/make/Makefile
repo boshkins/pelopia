@@ -21,6 +21,8 @@ SRC = \
     ResponseInternal \
     Data \
     DataNaive \
+    TextIndexNaive \
+    NormalizerNaive \
 
 OBJ = $(addprefix $(OBJDIR)/, $(addsuffix .o,$(SRC)))
 
@@ -38,7 +40,7 @@ test: std
 	$(MAKE) -C test
     
 accept: std    
-	$(MAKE) -C acceptance
+	-$(MAKE) -C acceptance
     
 lang: std
 	@$(MAKE) --no-print-directory -C language/python

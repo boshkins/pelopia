@@ -64,7 +64,9 @@ namespace Mapzen
                 // generic access to searchable properties
                 typedef enum 
                 {
-                    Property_Layer,
+                    Property_begin = 0,
+                    
+                    Property_Layer = Property_begin,
                     Property_Label, 
                     Property_Name,
                     Property_HouseNumber,
@@ -78,7 +80,9 @@ namespace Mapzen
                     Property_Country,
                     Property_CountryAbbr,
                     Property_Admin,
-                    Property_Geohash
+                    Property_Geohash,
+                    
+                    Property_end
                 } SearchablePropertyId;
                 
             public:

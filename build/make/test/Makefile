@@ -16,6 +16,7 @@ SRC = main \
     distance \
     datanaive \
     textindexnaive \
+    normalizernaive \
     dataset \
 
 # libpostal
