@@ -25,6 +25,7 @@ namespace Mapzen
         namespace GeocodeJSON
         {
             class Feature;
+            class Reader_Rapid_DOM;
         } 
         
         class DataNaive : public Data
@@ -32,7 +33,6 @@ namespace Mapzen
         public:
             // reads from an external GeocodeJSON file using RapidJSON based DOM reader 
             DataNaive ( const std :: string& filename ) throw ( std :: invalid_argument, std :: logic_error );
-            
             virtual ~DataNaive();
             
             virtual const GeocodeJSON :: Feature& Get ( Id ) const throw ( std :: invalid_argument );
@@ -42,6 +42,10 @@ namespace Mapzen
          private:
             typedef std :: vector < GeocodeJSON :: Feature* > Features;
             Features m_features;
+            
+            void Clear();
+            
+            GeocodeJSON::Reader_Rapid_DOM* m_reader;
         };
     }
 }

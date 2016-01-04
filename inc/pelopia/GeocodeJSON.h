@@ -12,6 +12,7 @@
 #include <pelopia/BoundingBox.h>
 
 #include <string>
+#include <stdexcept>
 
 namespace Mapzen
 {
@@ -66,8 +67,7 @@ namespace Mapzen
                 {
                     Property_begin = 0,
                     
-                    Property_Layer = Property_begin,
-                    Property_Label, 
+                    Property_Label = Property_begin,
                     Property_Name,
                     Property_HouseNumber,
                     Property_Street,
@@ -79,7 +79,6 @@ namespace Mapzen
                     Property_RegionAbbr,
                     Property_Country,
                     Property_CountryAbbr,
-                    Property_Admin,
                     Property_Geohash,
                     
                     Property_end
@@ -121,7 +120,7 @@ namespace Mapzen
                 
 				virtual const char* Geohash () const = 0; // optional
                 
-                const char* SearchableProperty ( SearchablePropertyId ) const;
+                const char* SearchableProperty ( SearchablePropertyId ) const throw ( std :: invalid_argument );
                 
                 virtual std::string Stringify() const = 0;
                 

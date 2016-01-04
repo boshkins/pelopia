@@ -19,10 +19,18 @@ namespace Mapzen
 		class ResponseInternal : public Response
 		{ 
         public:
-            ResponseInternal ( unsigned int p_reserve );
+            ResponseInternal ( unsigned int p_reserve = DefaultResults );
+            
+            void Clear();
             
             void AppendMatch ( Id id, MatchQuality score );
             void AppendAutocomplete ( const std::string& );
+            
+            void Sort();
+            void Truncate(size_t p_members);
+            
+        private:
+            static bool Greater ( const Response::Match&, const Response::Match& );
 		};
 
 	}

@@ -10,31 +10,47 @@ using namespace Mapzen :: Pelopia :: GeocodeJSON;
 using namespace std;
 
 DataNaive :: DataNaive ( const std :: string& filename )  throw ( invalid_argument, logic_error )
+: m_reader ( nullptr )
 {
-    ifstream in ( filename );
-    if ( ! in . good () )
+    try
     {
-        throw invalid_argument ( string ( "File '" ) + filename + "' could not be opened" );
-    }
-    
-    Reader_Rapid_DOM reader ( in );
-    while (true)
-    {
-        Feature* f = reader . NextValue ();
-        if (f == nullptr)
+        ifstream in ( filename );
+        if ( ! in . good () )
         {
-            break;
+            throw invalid_argument ( string ( "File '" ) + filename + "' could not be opened" );
         }
-        m_features . push_back ( f );
+        
+        m_reader = new Reader_Rapid_DOM ( in );
+        while (true)
+        {
+            Feature* f = m_reader->NextValue ();
+            if (f == nullptr)
+            {
+                break;
+            }
+            m_features . push_back ( f );
+        }
     }
-}            
+    catch (...)
+    {
+        Clear();
+        throw;
+    }
+}
 
-DataNaive :: ~DataNaive()
+void
+DataNaive :: Clear ()
 {
     for ( Features :: iterator it = m_features . begin(); it != m_features . end(); ++it )
     {
         delete *it;
     }
+    delete m_reader;
+}            
+
+DataNaive :: ~DataNaive()
+{
+    Clear();
 }
 
 const GeocodeJSON::Feature& 

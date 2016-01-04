@@ -28,7 +28,7 @@ namespace GeocodeJSON
         
         virtual ~Reader_Rapid_DOM ();
         
-        virtual Feature* NextValue () throw ( std :: logic_error ); 
+        virtual Feature* NextValue () throw ( std :: logic_error ); // owned by the caller
         
     private:
         Reader_Rapid_DOM ( const Reader_Rapid_DOM& );

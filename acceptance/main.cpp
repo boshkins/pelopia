@@ -16,9 +16,9 @@ TEST_CASE("one term, no location, found")
     const string Term = "Warwickshire";
     const size_t ExpectedCount = 10;
 
-    Response resp = ds.Search ( Term . c_str () );
+    const Response& resp = ds.Search ( Term . c_str () );
     
-    REQUIRE ( resp . Count () != ExpectedCount );
+    REQUIRE ( resp . Count () == ExpectedCount );
     
     for (unsigned int i = 0; i < resp.Count(); ++i)
     {

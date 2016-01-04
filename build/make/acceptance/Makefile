@@ -17,6 +17,6 @@ $(BINDIR)/acceptance: $(OBJ) $(LIBDIR)/libpelopia.a
 	$(CXX) -o $@ $^ 
 
 accept: makedirs $(EXE)
-	$(EXE)
+	cd $(SRCDIR); $(EXE)
 
 .PHONY: clean accept
