@@ -25,7 +25,7 @@ TEST_CASE ( "DataNaive Construct, Count" )
     DataNaive ds ( "./input/one-term.json" );
     REQUIRE ( 10 == ds . Count() );
 }
-#if 0
+
 TEST_CASE ( "DataNaive Construct, Get out of bounds" ) 
 {
     DataNaive ds ( "./input/one-term.json" );
@@ -54,4 +54,3 @@ TEST_CASE ( "DataNaive Construct, Get" )
     REQUIRE ( -64.810874 == g->Longitude ());
     REQUIRE ( 32.260458  == g->Latitude ());
 }
-#endif

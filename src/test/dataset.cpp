@@ -7,7 +7,7 @@
 
 using namespace Mapzen :: Pelopia;
 using namespace std;
-#if 0
+
 TEST_CASE ( "Dataset Construct from a non-existent file" ) 
 {
     REQUIRE_THROWS_AS ( Dataset ds ( "./input/notthere" ), invalid_argument );
@@ -76,4 +76,3 @@ TEST_CASE ( "Search one term, all defaults" )
     }
 }
 
-#endif
