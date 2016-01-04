@@ -42,11 +42,11 @@ TEST_CASE ( "Search one term, all defaults" )
     SECTION ( "Result count" )      { REQUIRE ( DefaultResults == resp.Count() ); }
     SECTION ( "Results sorted" )    
     {
-        double prevScore;
+        MatchQuality prevScore;
         for ( size_t i = 0; i < resp.Count(); ++i )
         {
             Id id;
-            double score = resp.Get(i, id, score);
+            MatchQuality score = resp.Get(i, id, score);
             if ( i == 0 )
             {
                 prevScore = score;

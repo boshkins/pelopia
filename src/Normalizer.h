@@ -24,7 +24,7 @@ namespace Mapzen
             typedef struct {
                 size_t startBytes;      // original term, offset from the start of the phrase
                 size_t lengthBytes;     // original term, size up to and excluding the following punctuation/white space
-                const char32_t* norm;   // NUL-terminated normalized term
+                const char32_t* norm;   // NUL-terminated normalized term in 32-bit Unicode
             } NormalizedTerm;
             
             typedef std::vector < NormalizedTerm > Result;

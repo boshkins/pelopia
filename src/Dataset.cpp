@@ -52,9 +52,11 @@ public:
         delete m_reader;
     }
     
+    typedef map<Id, MatchQuality> HitMap;
+    
     const Response& Search ( const char* p_text, Format p_format )
     {
-        map<Id, double> hits;
+        HitMap hits;
         
         const Normalizer::Result& res = m_norm.Normalize ( p_text, strlen ( p_text ) );
         for ( Normalizer::Result::const_iterator it = res.begin(); it != res.end(); ++it )
@@ -68,10 +70,10 @@ public:
                 {   
                     Id id = uses.GetTermUse( i ).ObjectId();
                     // for now, assign matching scores in the reverse sort order
-                    double score = double ( i ) / count; //TODO: use a Scorer
+                    MatchQuality score = double ( i ) / count; //TODO: use a Scorer
                     
                     // insert or update max score
-                    map<Id, double>::iterator hit = hits.find(id);
+                    HitMap::iterator hit = hits.find(id);
                     if ( hit == hits.end() )
                     {
                         hits [ id ] = score;
@@ -85,7 +87,7 @@ public:
 
             // copy hits to the results container
             m_response.Clear();
-            for ( map<Id, double>::const_iterator it = hits.begin(); it != hits.end(); ++it )
+            for ( HitMap::const_iterator it = hits.begin(); it != hits.end(); ++it )
             {
                 m_response.AppendMatch ( it->first, it->second );
             }
