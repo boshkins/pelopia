@@ -131,7 +131,7 @@ TEST_CASE ( "GeocodeJSON_Reader_Rapid_DOM ctor one object one feature" )
 {
     istringstream in ( Header + FeatureComplete + Footer );
     Reader_Rapid_DOM reader ( in );
-    const Feature* f = reader . NextValue ();
+    Feature* f = reader . NextValue ();
     REQUIRE ( nullptr != f );
     
     SECTION ( "GetGeometry" ) 
@@ -167,6 +167,37 @@ TEST_CASE ( "GeocodeJSON_Reader_Rapid_DOM ctor one object one feature" )
         REQUIRE ( nullptr != bb );
         REQUIRE ( BoundingBox ( 7.8, -1.2, -3.4, 5.6 ) == *bb ); 
     }
+    
+    SECTION ( "Clone" )
+    {
+        Feature* copy = f->Clone();
+        SECTION ( "GetGeometry" )   { REQUIRE ( *f->GetGeometry()           == *copy->GetGeometry() ); }
+        SECTION ( "Id" )            { REQUIRE ( string ( f->Id() )          == copy->Id() ); }
+        SECTION ( "layer" )         { REQUIRE ( string ( f->Layer() )       == copy->Layer() ); }
+        SECTION ( "source" )        { REQUIRE ( string ( f->Source() )      == copy->Source() ); }
+        SECTION ( "accuracy" )      { REQUIRE ( f->AccuracyMeters()         == copy->AccuracyMeters() ); }
+        SECTION ( "confidence" )    { REQUIRE ( f->Confidence()             == copy->Confidence() ); }
+        SECTION ( "label" )         { REQUIRE ( string ( f->Label() )       == copy->Label() ); }
+        SECTION ( "name" )          { REQUIRE ( string ( f->Name() )        == copy->Name() ); }
+        SECTION ( "housenumber" )   { REQUIRE ( string ( f->HouseNumber() ) == copy->HouseNumber() ); }
+        SECTION ( "street" )        { REQUIRE ( string ( f->Street() )      == copy->Street() ); }
+        SECTION ( "postcode" )      { REQUIRE ( string ( f->Postcode() )    == copy->Postcode() ); }
+        SECTION ( "city" )          { REQUIRE ( string ( f->City() )        == copy->City() ); }
+        SECTION ( "district" )      { REQUIRE ( string ( f->District() )    == copy->District() ); }
+        SECTION ( "county" )        { REQUIRE ( string ( f->County() )      == copy->County() ); }
+        SECTION ( "region" )        { REQUIRE ( string ( f->Region() )      == copy->Region() ); }
+        SECTION ( "regionabbr" )    { REQUIRE ( string ( f->RegionAbbr() )  == copy->RegionAbbr() ); }
+        SECTION ( "country" )       { REQUIRE ( string ( f->Country() )     == copy->Country() ); }
+        SECTION ( "country_abbr" )  { REQUIRE ( string ( f->CountryAbbr() ) == copy->CountryAbbr() ); }
+        SECTION ( "admin[1]" )      { REQUIRE ( string ( f->Admin ( 1 ) )   == copy->Admin( 1 ) ); }
+        SECTION ( "admin[7]" )      { REQUIRE ( string ( f->Admin ( 7 ) )   == copy->Admin( 7 ) ); }
+        SECTION ( "geohash" )       { REQUIRE ( string ( f->Geohash() )     == copy->Geohash() ); }
+        SECTION ( "bbox" )          { REQUIRE ( *f->GetBoundingBox()        == *copy->GetBoundingBox() ); }
+            
+        delete copy;    
+    }
+    
+    delete f;
 }
 
 static const string OptionalAbsent = /* mandatory properties only */
@@ -187,7 +218,7 @@ static const string OptionalAbsent = /* mandatory properties only */
         "       }\n"
 ;
 
-TEST_CASE ( "GeocodeJSON_Reader_Rapid_DOM ctor one object no optinal properties" ) 
+TEST_CASE ( "GeocodeJSON_Reader_Rapid_DOM ctor one object no optional properties" ) 
 {
     istringstream in ( Header + OptionalAbsent + Footer );
     Reader_Rapid_DOM reader ( in );
@@ -222,5 +253,29 @@ TEST_CASE ( "GeocodeJSON_Reader_Rapid_DOM ctor one object no optinal properties"
     SECTION ( "admin[7]" )      { REQUIRE ( nullptr                 == f -> Admin ( 7 ) ); }
     SECTION ( "geohash" )       { REQUIRE ( nullptr                 == f -> Geohash () ); }
     SECTION ( "bbox" )          { REQUIRE ( nullptr                 == f -> GetBoundingBox () ); }
+    
+    delete f;
 }
 
+TEST_CASE ( "GeocodeJSON::Feature generic access to searchable properties")
+{
+    istringstream in ( Header + FeatureComplete + Footer );
+    Reader_Rapid_DOM reader ( in );
+    Feature* f = reader . NextValue ();
+    
+    SECTION ( "label" )         { REQUIRE ( string ( "Mapzen, San Francisco, CA" )  == f -> SearchableProperty ( Feature :: Property_Label          ) ); }
+    SECTION ( "name" )          { REQUIRE ( string ( "Mapzen" )                     == f -> SearchableProperty ( Feature :: Property_Name           ) ); }
+    SECTION ( "housenumber" )   { REQUIRE ( string ( "155" )                        == f -> SearchableProperty ( Feature :: Property_HouseNumber    ) ); }
+    SECTION ( "street" )        { REQUIRE ( string ( "9th Street" )                 == f -> SearchableProperty ( Feature :: Property_Street         ) ); }
+    SECTION ( "postcode" )      { REQUIRE ( string ( "94103" )                      == f -> SearchableProperty ( Feature :: Property_Postcode       ) ); }
+    SECTION ( "city" )          { REQUIRE ( string ( "San Francisco" )              == f -> SearchableProperty ( Feature :: Property_City           ) ); }
+    SECTION ( "district" )      { REQUIRE ( string ( "Civic Center" )               == f -> SearchableProperty ( Feature :: Property_District       ) ); }
+    SECTION ( "county" )        { REQUIRE ( string ( "San Francisco County" )       == f -> SearchableProperty ( Feature :: Property_County         ) ); }
+    SECTION ( "region" )        { REQUIRE ( string ( "California" )                 == f -> SearchableProperty ( Feature :: Property_Region         ) ); }
+    SECTION ( "regionabbr" )    { REQUIRE ( string ( "CA" )                         == f -> SearchableProperty ( Feature :: Property_RegionAbbr     ) ); }
+    SECTION ( "country" )       { REQUIRE ( string ( "United States" )              == f -> SearchableProperty ( Feature :: Property_Country        ) ); }
+    SECTION ( "country_abbr" )  { REQUIRE ( string ( "USA" )                        == f -> SearchableProperty ( Feature :: Property_CountryAbbr    ) ); }
+    SECTION ( "geohash" )       { REQUIRE ( string ( "Ehugh5oofiToh9aWe3" )         == f -> SearchableProperty ( Feature :: Property_Geohash        ) ); }
+    
+    delete f;
+}

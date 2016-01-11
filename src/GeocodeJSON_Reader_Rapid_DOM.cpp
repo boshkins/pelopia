@@ -13,8 +13,9 @@ using namespace rapidjson;
 class Reader_Rapid_DOM :: FeatureDOM : public Feature
 {
 public:    
-    FeatureDOM ( Value& p_value ) 
-    : m_value ( p_value )
+    FeatureDOM ( const Value& p_value, Document::AllocatorType& p_allocator )
+     :  m_allocator ( p_allocator ),
+        m_value ( p_value, p_allocator )
     {
     }
     virtual ~FeatureDOM () 
@@ -153,10 +154,10 @@ public:
     
     virtual std::string Stringify() const { return string(); }
     
-    // create a copy of this object, to be deleted by the caller
+    // create a deep copy of this object, to be deleted by the caller
     virtual Feature* Clone() const 
-    { 
-        throw std :: logic_error ( "Reader_Rapid_DOM :: Clone() is not implemented" ); 
+    {
+         return new FeatureDOM ( m_value, m_allocator );
     } 
     
 private:
@@ -218,9 +219,10 @@ private:
     }
     
 private:
-    Value& m_value;
-    mutable Geometry    m_geometry;
-    mutable BoundingBox m_bbox;
+    Document::AllocatorType&    m_allocator;
+    Value                       m_value;
+    mutable Geometry            m_geometry;
+    mutable BoundingBox         m_bbox;
 };
 
 class Reader_Rapid_DOM :: StlStream // implements concept rapidjson :: Stream using std :: istream
@@ -295,23 +297,21 @@ Reader_Rapid_DOM :: Reader_Rapid_DOM ( std :: istream& p_in ) throw ( std :: log
         throw std :: logic_error ( "Property \"features\" is not an array" ); 
     }
     m_curFeature = 0;
-    m_lastObject = nullptr;
 }
         
 Reader_Rapid_DOM :: ~Reader_Rapid_DOM ()
 {
 }
         
-const Feature* 
+Feature* 
 Reader_Rapid_DOM :: NextValue () throw ( std :: logic_error )
 {
     if ( m_curFeature >= m_features . Size() )
     {
         return nullptr;
     }       
-    delete m_lastObject;
-    m_lastObject = new FeatureDOM ( m_features [ m_curFeature ] );
+    Feature* ret = new FeatureDOM ( m_features [ m_curFeature ], m_doc.GetAllocator() );
     ++m_curFeature;
-    return m_lastObject;
+    return ret;
 }
 

@@ -1,0 +1,293 @@
+{
+    "geocoding": {
+        "version": "0.1",
+        "attribution": "http://pelias.bigdev.mapzen.com/v1/attribution",
+        "query": {
+            "text": "3437 warwickshire rd",
+            "parsed_text": {
+                "number": 3437,
+                "street": "warwickshire rd",
+                "regions": [ ]
+            },
+            "size": 10,
+            "private": false
+        },
+        "engine": {
+            "name": "Pelias",
+            "author": "Mapzen",
+            "version": "1.0"
+        },
+        "timestamp": 1447096046892
+    },
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "type": "Feature",
+            "properties": {
+                "id": "address-osmnode-3415956844",
+                "gid": "osm:address:address-osmnode-3415956844",
+                "layer": "address",
+                "source": "osm",
+                "name": "3437 Warwickshire Road",
+                "housenumber": "3437",
+                "street": "Warwickshire Road",
+                "postalcode": "18925",
+                "country_a": "USA",
+                "country": "United States",
+                "region": "Pennsylvania",
+                "region_a": "PA",
+                "county": "Bucks County",
+                "localadmin": "Buckingham",
+                "confidence": 0.89,
+                "label": "3437 Warwickshire Road, Buckingham, PA"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -75.079874,
+                    40.292543
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "id": "cc03bb47cbe646e081ebff745e92a8b7",
+                "gid": "oa:address:cc03bb47cbe646e081ebff745e92a8b7",
+                "layer": "address",
+                "source": "oa",
+                "name": "8 Warwickshire Road",
+                "housenumber": "8",
+                "street": "Warwickshire Road",
+                "postalcode": "WK02",
+                "country_a": "BMU",
+                "country": "Bermuda",
+                "region": "Warwick",
+                "confidence": 0.597,
+                "label": "8 Warwickshire Road, Warwick, Bermuda"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -64.810363,
+                    32.260517
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "id": "3e21083c5cf64fee909762653ec515ba",
+                "gid": "oa:address:3e21083c5cf64fee909762653ec515ba",
+                "layer": "address",
+                "source": "oa",
+                "name": "3 Warwickshire Road",
+                "housenumber": "3",
+                "street": "Warwickshire Road",
+                "postalcode": "WK02",
+                "country_a": "BMU",
+                "country": "Bermuda",
+                "region": "Warwick",
+                "confidence": 0.597,
+                "label": "3 Warwickshire Road, Warwick, Bermuda"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -64.810874,
+                    32.260458
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "id": "51f9c69bdc9d43d69c665c24c4f6ab9e",
+                "gid": "oa:address:51f9c69bdc9d43d69c665c24c4f6ab9e",
+                "layer": "address",
+                "source": "oa",
+                "name": "1 Warwickshire Road",
+                "housenumber": "1",
+                "street": "Warwickshire Road",
+                "postalcode": "WK02",
+                "country_a": "BMU",
+                "country": "Bermuda",
+                "region": "Warwick",
+                "confidence": 0.597,
+                "label": "1 Warwickshire Road, Warwick, Bermuda"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -64.810976,
+                    32.260702
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "id": "aa0296c39384464eb05cd4af2e822ba3",
+                "gid": "oa:address:aa0296c39384464eb05cd4af2e822ba3",
+                "layer": "address",
+                "source": "oa",
+                "name": "5 Warwickshire Road",
+                "housenumber": "5",
+                "street": "Warwickshire Road",
+                "postalcode": "WK02",
+                "country_a": "BMU",
+                "country": "Bermuda",
+                "region": "Warwick",
+                "confidence": 0.597,
+                "label": "5 Warwickshire Road, Warwick, Bermuda"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -64.810646,
+                    32.260833
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "id": "e405f9191e5f4749b687c3dd52aa7af8",
+                "gid": "oa:address:e405f9191e5f4749b687c3dd52aa7af8",
+                "layer": "address",
+                "source": "oa",
+                "name": "4 Warwickshire Road",
+                "housenumber": "4",
+                "street": "Warwickshire Road",
+                "postalcode": "WK02",
+                "country_a": "BMU",
+                "country": "Bermuda",
+                "region": "Warwick",
+                "confidence": 0.597,
+                "label": "4 Warwickshire Road, Warwick, Bermuda"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -64.810274,
+                    32.260261
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "id": "57b94e16fa4d48fea4ccec1746f8cc62",
+                "gid": "oa:address:57b94e16fa4d48fea4ccec1746f8cc62",
+                "layer": "address",
+                "source": "oa",
+                "name": "6 Warwickshire Road",
+                "housenumber": "6",
+                "street": "Warwickshire Road",
+                "postalcode": "WK02",
+                "country_a": "BMU",
+                "country": "Bermuda",
+                "region": "Warwick",
+                "confidence": 0.597,
+                "label": "6 Warwickshire Road, Warwick, Bermuda"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -64.810575,
+                    32.260134
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "id": "78f2b836380d4f67881d5dc18a57d41c",
+                "gid": "oa:address:78f2b836380d4f67881d5dc18a57d41c",
+                "layer": "address",
+                "source": "oa",
+                "name": "9131 Warwickshire Road",
+                "housenumber": "9131",
+                "street": "Warwickshire Road",
+                "country_a": "USA",
+                "country": "United States",
+                "region": "Florida",
+                "region_a": "FL",
+                "county": "Duval County",
+                "locality": "Jacksonville",
+                "neighbourhood": "Craven",
+                "confidence": 0.596,
+                "label": "9131 Warwickshire Road, Jacksonville, FL"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -81.59704,
+                    30.214285
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "id": "defc9450a8e04631a946c80bc1960677",
+                "gid": "oa:address:defc9450a8e04631a946c80bc1960677",
+                "layer": "address",
+                "source": "oa",
+                "name": "9020 Warwickshire Road",
+                "housenumber": "9020",
+                "street": "Warwickshire Road",
+                "country_a": "USA",
+                "country": "United States",
+                "region": "Florida",
+                "region_a": "FL",
+                "county": "Duval County",
+                "locality": "Jacksonville",
+                "neighbourhood": "Craven",
+                "confidence": 0.596,
+                "label": "9020 Warwickshire Road, Jacksonville, FL"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -81.598765,
+                    30.21615
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "id": "debb3c5cb880460d99e42a04ece6844e",
+                "gid": "oa:address:debb3c5cb880460d99e42a04ece6844e",
+                "layer": "address",
+                "source": "oa",
+                "name": "9136 Warwickshire Road",
+                "housenumber": "9136",
+                "street": "Warwickshire Road",
+                "country_a": "USA",
+                "country": "United States",
+                "region": "Florida",
+                "region_a": "FL",
+                "county": "Duval County",
+                "locality": "Jacksonville",
+                "neighbourhood": "Craven",
+                "confidence": 0.596,
+                "label": "9136 Warwickshire Road, Jacksonville, FL"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -81.597412,
+                    30.214098
+                ]
+            }
+        }
+    ],
+    "bbox": [
+        -81.598765,
+        30.214098,
+        -64.810274,
+        40.292543
+    ]
+}

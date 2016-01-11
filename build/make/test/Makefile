@@ -12,8 +12,11 @@ SRC = main \
     pelopia \
     boundingbox \
     geojson \
-
-#    datanaive \
+    response \
+    distance \
+    datanaive \
+    textindexnaive \
+    normalizernaive \
     dataset \
 
 # libpostal
@@ -28,5 +31,8 @@ $(LIBDIR)/libpelopia.a:
 
 $(BINDIR)/test-pelopia: $(OBJ) $(LIBDIR)/libpelopia.a
 	$(CXX) -o $@ $^ #/usr/local/lib/libpostal.a
+    
+valgrind: $(BINDIR)/test-pelopia
+	cd $(SRCDIR); valgrind $(BINDIR)/test-pelopia 
 
 .PHONY: std pelopia clean

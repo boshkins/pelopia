@@ -50,3 +50,6 @@ linux-*/
 Debug/
 Release/
 *.d
+
+# VS Code settings
+.vscode 

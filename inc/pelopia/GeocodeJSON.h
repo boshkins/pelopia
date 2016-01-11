@@ -12,6 +12,7 @@
 #include <pelopia/BoundingBox.h>
 
 #include <string>
+#include <stdexcept>
 
 namespace Mapzen
 {
@@ -61,6 +62,29 @@ namespace Mapzen
 			class Feature
 			{
             public:
+                // generic access to searchable properties
+                typedef enum 
+                {
+                    Property_begin = 0,
+                    
+                    Property_Label = Property_begin,
+                    Property_Name,
+                    Property_HouseNumber,
+                    Property_Street,
+                    Property_Postcode,
+                    Property_City,
+                    Property_District,
+                    Property_County,
+                    Property_Region,
+                    Property_RegionAbbr,
+                    Property_Country,
+                    Property_CountryAbbr,
+                    Property_Geohash,
+                    
+                    Property_end
+                } SearchablePropertyId;
+                
+            public:
                 virtual ~Feature() = 0;
                 
 			public:
@@ -69,10 +93,8 @@ namespace Mapzen
 
 				// Access to Feature object's properties, based on 
                 // https://github.com/pelias/geocodejson-spec/tree/master/draft
-                // optional propreties return 0/nullptr if omitted
+                // optional properties return 0/nullptr if omitted
                 
-                //TBD: enum PropertyID for generic access to (string) properties
-
 				virtual const char* Id () const = 0;
 				virtual const char* Layer () const = 0;
                 
@@ -97,6 +119,8 @@ namespace Mapzen
 				virtual const char* Admin ( unsigned int level ) const = 0; // optional; level from 1 to 10
                 
 				virtual const char* Geohash () const = 0; // optional
+                
+                const char* SearchableProperty ( SearchablePropertyId ) const throw ( std :: invalid_argument );
                 
                 virtual std::string Stringify() const = 0;
                 

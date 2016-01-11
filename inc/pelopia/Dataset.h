@@ -25,31 +25,43 @@ namespace Mapzen
 		class Dataset {
 
 		public:
-			Dataset ( const char* filename );
+			Dataset ( const char* filename ) throw ( std :: invalid_argument, std :: logic_error );
+			~Dataset ();
 
-			Response Search ( const char* text, 
+            // For all methods returning const Response&, the reference is valid 
+            // until the next call to a Search/Autocomplete method
+            const Response& Search ( 
+                const char* text, 
 				Format format = { DefaultResults } );
 
-			Response Search ( const char* text,
+			const Response& Search ( 
+                const char* text,
 				const LatLon& scope,
 				const Distance& radius = Distance ( Distance::Miles, 0 ),
 				Format format = { DefaultResults } );
 
-			Response Search ( const char* text,
+			const Response& Search ( 
+                const char* text,
 				const BoundingBox& scope,
 				Format format = { DefaultResults } );
 
-			Response Autocomplete ( const char* text, const LatLon& scope );
+			const Response& Autocomplete ( const char* text, const LatLon& scope );
 
-			Response Autocomplete ( const char* text, const BoundingBox& scope );
+			const Response& Autocomplete ( const char* text, const BoundingBox& scope );
 
-			Response Reverse ( const LatLon& point,
+			const Response& Reverse ( 
+                const LatLon& point,
 				const Distance& radius,
 				Format format = { AllResults } );
 
             // The reference is valid until the next call to Place()
             // Use Feature::Clone() to make a caller-owned copy
-			const GeocodeJSON :: Feature& Place ( Id ) const throw ( std :: logic_error );
+			const GeocodeJSON :: Feature& Place ( Id ) const throw ( std :: invalid_argument );
+            
+        private:
+            class Impl;
+            
+            Impl* m_impl;
 		};
 
 	}
