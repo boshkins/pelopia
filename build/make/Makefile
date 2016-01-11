@@ -29,7 +29,8 @@ OBJ = $(addprefix $(OBJDIR)/, $(addsuffix .o,$(SRC)))
 clean:
 	rm -rf $(LIBDIR)/libpelopia.a $(OBJDIR)
 	@$(MAKE) --no-print-directory -C test clean
-	@$(MAKE) --no-print-directory -C language/python clean
+	@$(MAKE) --no-print-directory -C acceptance clean
+	@$(MAKE) --no-print-directory -C language clean
 
 libpelopia: makedirs $(LIBDIR)/libpelopia.a
 
@@ -43,7 +44,7 @@ accept: std
 	-$(MAKE) -C acceptance
     
 lang: std
-	@$(MAKE) --no-print-directory -C language/python
+	@$(MAKE) -C language
 
 .PHONY: std libpelopia test clean accept lang
  

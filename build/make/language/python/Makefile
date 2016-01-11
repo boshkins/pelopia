@@ -2,8 +2,6 @@ default: std
 
 std: libpelopia
 
-all: std 
-
 TOP = $(abspath ../../../..)
 MODULE = language/python
 
