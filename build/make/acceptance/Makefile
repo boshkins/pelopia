@@ -18,5 +18,8 @@ $(BINDIR)/acceptance: $(OBJ) $(LIBDIR)/libpelopia.a
 
 accept: makedirs $(EXE)
 	cd $(SRCDIR); $(EXE)
+    
+valgrind: $(EXE)
+	cd $(SRCDIR); valgrind --leak-check=full --show-leak-kinds=all $(EXE)     
 
 .PHONY: clean accept

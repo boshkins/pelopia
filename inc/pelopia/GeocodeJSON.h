@@ -93,7 +93,7 @@ namespace Mapzen
 
 				// Access to Feature object's properties, based on 
                 // https://github.com/pelias/geocodejson-spec/tree/master/draft
-                // optional propreties return 0/nullptr if omitted
+                // optional properties return 0/nullptr if omitted
                 
 				virtual const char* Id () const = 0;
 				virtual const char* Layer () const = 0;
