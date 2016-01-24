@@ -2,8 +2,8 @@ import ctypes
 import os
 
 #try to locate the .so file in the same directory as this file
-#_file = '/home/sergey/Documents/pelopia/linux-x86_64-Debug/lib/libpelopia.so'
-_file = "/home/boshkins/github/pelopia/linux-x86_64-Debug/lib/libpelopia.so"
+_file = '/home/sergey/Documents/pelopia/linux-x86_64-Debug/lib/libpelopia.so'
+#_file = "/home/boshkins/github/pelopia/linux-x86_64-Debug/lib/libpelopia.so"
 _path = os.path.join(*(os.path.split(__file__)[:-1] + (_file,)))
 x  = ctypes . cdll . LoadLibrary ( _path )
 
@@ -16,23 +16,27 @@ search_1 = x.Search_py
 search_1.argtypes =  (ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_char), ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_int)   
 search_1.restype = ctypes.POINTER(ctypes.c_void_p)
 
-#for i in resp:
 result = x.Get_py
-result.argtypes =  (ctypes.POINTER(ctypes.c_void_p), ctypes.c_int, ctypes.c_int, ctypes.c_double) 
+result.argtypes =  (ctypes.POINTER(ctypes.c_void_p), ctypes.c_int, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_double)) 
 result.restype = ctypes.c_bool
 
 place = x.Place_py
-place.argtypes =  (ctypes.POINTER(ctypes.c_void_p), ctypes.c_int) 
+place.argtypes =  (ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_int)) 
 place.restype = ctypes.POINTER(ctypes.c_void_p)
+
+print_cout = x.Cout_py
+print_cout.argtypes = (ctypes.c_int, ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_void_p))
+print_cout.restype = ?
 
 
 def main():
-#	ds = dataset('/home/sergey/Documents/pelopia/src/test/input/one-term.json')
-	ds = dataset('/home/boshkins/github/pelopia/src/test/input/one-term.json')
+	ds = dataset('/home/sergey/Documents/pelopia/src/test/input/one-term.json')
+#	ds = dataset('/home/boshkins/github/pelopia/src/test/input/one-term.json')
         resp  = search_1(ds, "Mapzen", 40.7507, 73.9939, 0, 10) # the required numbers of arguments is six
-        #result(resp, i, id, score)
-        #place(ds, id)
+        result(resp, i, id, score)
+        place_id = place(ds, id)
+        print_cout(i, score, place_id)
 
 if __name__ == '__main__':
-	main()
+    main()
 	

@@ -12,7 +12,6 @@ void *createDataset(const char *filename)
      return (void *)ds;
 }
 
-
 void *Search_py(void *ds, 
 	const char *text, 
 	const double lat, 

@@ -53,5 +53,15 @@ void *Place_py(void *ds, unsigned int *id)
     return (void*)&(ds_c -> Place(*id));
 }
 
+void Cout_py(unsigned int index, double *score, void *place_id)
+{
+    Place *place_c = (Place*)place_id;
+    double *score_c = (double*)score;
+
+    cout << ( i + 1 ) << " ( " << score_c << " ) " 
+             << ": " <<  place_c -> Name () << ", " << place_c -> Address () 
+             << endl;
+}             
+
 }
 
