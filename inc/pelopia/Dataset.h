@@ -25,7 +25,7 @@ namespace Mapzen
 		class Dataset {
 
 		public:
-			Dataset ( const char* filename );
+			Dataset ( const char* filename ) throw ( std :: invalid_argument, std :: logic_error );
 			~Dataset ();
 
             // For all methods returning const Response&, the reference is valid 
@@ -56,7 +56,7 @@ namespace Mapzen
 
             // The reference is valid until the next call to Place()
             // Use Feature::Clone() to make a caller-owned copy
-			const GeocodeJSON :: Feature& Place ( Id ) const throw ( std :: logic_error );
+			const GeocodeJSON :: Feature& Place ( Id ) const throw ( std :: invalid_argument );
             
         private:
             class Impl;

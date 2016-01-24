@@ -12,6 +12,7 @@
 #include <pelopia/BoundingBox.h>
 
 #include <string>
+#include <stdexcept>
 
 namespace Mapzen
 {
@@ -64,8 +65,9 @@ namespace Mapzen
                 // generic access to searchable properties
                 typedef enum 
                 {
-                    Property_Layer,
-                    Property_Label, 
+                    Property_begin = 0,
+                    
+                    Property_Label = Property_begin,
                     Property_Name,
                     Property_HouseNumber,
                     Property_Street,
@@ -77,8 +79,9 @@ namespace Mapzen
                     Property_RegionAbbr,
                     Property_Country,
                     Property_CountryAbbr,
-                    Property_Admin,
-                    Property_Geohash
+                    Property_Geohash,
+                    
+                    Property_end
                 } SearchablePropertyId;
                 
             public:
@@ -90,7 +93,7 @@ namespace Mapzen
 
 				// Access to Feature object's properties, based on 
                 // https://github.com/pelias/geocodejson-spec/tree/master/draft
-                // optional propreties return 0/nullptr if omitted
+                // optional properties return 0/nullptr if omitted
                 
 				virtual const char* Id () const = 0;
 				virtual const char* Layer () const = 0;
@@ -117,7 +120,7 @@ namespace Mapzen
                 
 				virtual const char* Geohash () const = 0; // optional
                 
-                const char* SearchableProperty ( SearchablePropertyId ) const;
+                const char* SearchableProperty ( SearchablePropertyId ) const throw ( std :: invalid_argument );
                 
                 virtual std::string Stringify() const = 0;
                 

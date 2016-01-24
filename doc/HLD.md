@@ -61,31 +61,32 @@ class BoundingBox {
     // All 2-LatLon calls follow the order
     // TopLeft - BottomRight
 
-	// all constructors will recalculate longitudes to 180 .. 360 if the 180 
+	// all constructors will recalculate longitudes to 0 .. 540 if the 180 
 	//  meridian lies within the box
 	BoundingBox (); // all 0s
-	BoundingBox ( LatLon p_topLeft, LatLon p_bottomRight );
+	BoundingBox ( LatLon p_topLeft, LatLon p_bottomRight )  throw ( std :: logic_error );
 	BoundingBox (
 		Coordinate latTop, 
         Coordinate lonLeft,
 		Coordinate latBottom,
-		Coordinate lonRight );
+		Coordinate lonRight )  throw ( std :: logic_error );
 
-	Coordinate Top() const;
-	Coordinate Left() const;
-	Coordinate Bottom() const;
-	Coordinate Right() const;
+	Coordinate Top() const      { return m_topLeft . Latitude (); }
+	Coordinate Left() const     { return m_topLeft . Longitude (); }
+	Coordinate Bottom() const   { return m_bottomRight . Latitude (); }
+	Coordinate Right() const    { return m_bottomRight . Longitude (); }
 
 	const LatLon& TopLeft() const { return m_topLeft; }
 	const LatLon& BottomRight() const { return m_bottomRight; }
     
 	// the setters take care of translation of longitude around the 180 meridian, if necessary
-	void SetCoordinates ( const LatLon& p_topLeft,  const LatLon& p_bottomRight );
+	void SetCoordinates ( const LatLon& p_topLeft,  const LatLon& p_bottomRight )  
+	   throw ( std :: logic_error );
 	void SetCoordinates ( 
 		Coordinate latTop, 
 		Coordinate lonLeft,
 		Coordinate latBottom,
-		Coordinate lonRight );
+		Coordinate lonRight )  throw ( std :: logic_error );
 };
 
 class Distance
@@ -192,43 +193,71 @@ namespace GeocodeJSON {
 	class Feature
 	{
 	public:
-		const Geometry* GetGeometry() const;
+        // generic access to searchable properties
+        typedef enum 
+        {
+            Property_begin = 0,
+            
+            Property_Label = Property_begin,
+            Property_Name,
+            Property_HouseNumber,
+            Property_Street,
+            Property_Postcode,
+            Property_City,
+            Property_District,
+            Property_County,
+            Property_Region,
+            Property_RegionAbbr,
+            Property_Country,
+            Property_CountryAbbr,
+            Property_Geohash,
+            
+            Property_end
+        } SearchablePropertyId;
+        
+    public:
+        virtual ~Feature() = 0;
+        
+	public:
+        virtual const BoundingBox* GetBoundingBox() const = 0; // optional
+		virtual const Geometry* GetGeometry() const = 0;
 
 		// Access to Feature object's properties, based on 
         // https://github.com/pelias/geocodejson-spec/tree/master/draft
-        // optional propreties return 0/nullptr if omitted
-
-		const char* Id () const;
-		const char* Layer () const;
-
-		const char* Source () const; // optional
-		uint32_t AccuracyMeters () const; // optional
-		double Confidence () const; // 0.0 .. 1.0
+        // optional properties return 0/nullptr if omitted
         
-		const char* Label () const; 
-		const char* Name () const; // "recommended" but still optional
-
-		const char* HouseNumber () const; // optional
-		const char* Street () const; // optional
-		const char* Postcode () const; // optional
-		const char* City () const; // optional
-		const char* District () const; // optional
-		const char* County () const; // optional
-		const char* Region () const; // optional
-		const char* RegionAbbr () const; // optional
-		const char* Country () const; // optional
-		const char* CountryAbbr () const; // optional
-
-		const char* Admin ( unsigned int level ) const; // optional; level from 1 to 10
-
-		const char* Geohash () const; // optional
-
-		const Geometry& CenterPoint() const;
-
-		std::string Stringify() const;
-		
-		// create a copy of this object, to be deleted by the caller
-		virtual Feature* Copy() const = 0; 
+		virtual const char* Id () const = 0;
+		virtual const char* Layer () const = 0;
+        
+		virtual const char* Source () const = 0; // optional
+		virtual uint32_t AccuracyMeters () const = 0; // optional
+		virtual double Confidence () const = 0; // 0.0 .. 1.0; optional
+        
+		virtual const char* Label () const = 0; 
+		virtual const char* Name () const = 0; // "recommended" but still optional
+        
+		virtual const char* HouseNumber () const = 0; // optional
+		virtual const char* Street () const = 0; // optional
+		virtual const char* Postcode () const = 0; // optional
+		virtual const char* City () const = 0; // optional
+		virtual const char* District () const = 0; // optional
+		virtual const char* County () const = 0; // optional
+		virtual const char* Region () const = 0; // optional
+		virtual const char* RegionAbbr () const = 0; // optional
+		virtual const char* Country () const = 0; // optional
+		virtual const char* CountryAbbr () const = 0; // optional
+        
+		virtual const char* Admin ( unsigned int level ) const = 0; // optional; level from 1 to 10
+        
+		virtual const char* Geohash () const = 0; // optional
+        
+        const char* SearchableProperty ( SearchablePropertyId ) const 
+            throw ( std :: invalid_argument );
+        
+        virtual std::string Stringify() const = 0;
+        
+        // create a copy of this object, to be deleted by the caller
+        virtual Feature* Clone() const = 0;
 	};
 
 }
@@ -549,9 +578,38 @@ For naive implementation, create a simplistic tokenizer akin to [https://www.ela
 
 The same address normalization logic has to be applied to addresses as part of the dataset preparation process and to queries before search.
 
+The normalizer API is designed to minmize allocations and copying: 
+
+```c++
+class Normalizer
+{
+public:
+    typedef struct {
+        size_t startBytes;      // original term, offset from the start of the phrase
+        size_t lengthBytes;     // original term, size up to and excluding the following punctuation/white space
+        const char32_t* norm;   // NUL-terminated normalized term in 32-bit Unicode
+    } NormalizedTerm;
+    
+    typedef std::vector < NormalizedTerm > Result;
+    
+public:
+    virtual ~Normalizer() {}
+    
+    // phrase is in UTF-8-encoded Unicode
+    // the returned reference stays valid until the next call to Normalize
+    virtual const Result& Normalize ( const char* phrase, size_t sizeBytes ) = 0;
+}
+```	
+
+A naive normalizer will break the given phrase into individual terms based on punctuation and white space. To detect punctuation and white space characters, use ::ispunct() and ::isspace() from header \<cctype>.
+
+For a little more advanced normalizer, consider using locale-specific definitons of ispunct and isspace from header \<locale>; the specific locale to be used would be specified by the client code, or determined based on the dataset's contents.
+
+For dealing with UTF-8 encoding, use the UTF8-CPP library (http://utfcpp.sourceforge.net/)
+
 ##Exception Handling
 
-Methods of the API will throw exceptions to report errors. The exceptions generated by the library will be belong to classes derived from standard exception classes declared in <stdexcept>, for example:
+Methods of the API will throw exceptions to report errors. The exceptions generated by the library will be belong to classes derived from standard exception classes declared in \<stdexcept>, for example:
 
 ```c++
 #include <stdexcept>
@@ -667,7 +725,7 @@ The contents of directory **pelopia/**:
     acceptance/		- acceptance tests
     language/       - language bindings/wrappers
         C/
-        Python/
+        python/
         ...
 
 ##Examples

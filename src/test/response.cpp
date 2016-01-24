@@ -56,3 +56,54 @@ TEST_CASE ( "Match" )
     
 }
 
+TEST_CASE ( "Clear" ) 
+{
+    ResponseInternal resp;
+    resp.AppendMatch ( 1, 0.5 );
+    resp.AppendMatch ( 2, 1.5 );
+    resp.AppendMatch ( 3, 0.6 );
+    resp.AppendMatch ( 4, 1.2 );
+    resp.Clear();
+    REQUIRE ( 0 == resp.Count() );
+}
+
+TEST_CASE ( "Sort" ) 
+{
+    ResponseInternal resp;
+    resp.AppendMatch ( 1, 0.5 );
+    resp.AppendMatch ( 2, 1.5 );
+    resp.AppendMatch ( 3, 0.6 );
+    resp.AppendMatch ( 4, 1.2 );
+    
+    resp.Sort(); // descending score
+
+    REQUIRE ( 2 == resp.Get ( 0 ) );
+    REQUIRE ( 4 == resp.Get ( 1 ) );
+    REQUIRE ( 3 == resp.Get ( 2 ) );
+    REQUIRE ( 1 == resp.Get ( 3 ) );
+}
+
+TEST_CASE ( "Truncate, no change" ) 
+{
+    ResponseInternal resp;
+    resp.AppendMatch ( 1, 0.5 );
+    resp.AppendMatch ( 2, 1.5 );
+    resp.AppendMatch ( 3, 0.6 );
+    resp.AppendMatch ( 4, 1.2 );
+    resp.Truncate(4);
+    REQUIRE ( 4 == resp.Count() );
+}
+
+TEST_CASE ( "Truncate, changed" ) 
+{
+    ResponseInternal resp;
+    resp.AppendMatch ( 1, 0.5 );
+    resp.AppendMatch ( 2, 1.5 );
+    resp.AppendMatch ( 3, 0.6 );
+    resp.AppendMatch ( 4, 1.2 );
+    resp.Truncate(2);
+    REQUIRE ( 2 == resp.Count() );
+    REQUIRE ( 1 == resp.Get ( 0 ) );
+    REQUIRE ( 2 == resp.Get ( 1 ) );
+}
+
