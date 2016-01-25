@@ -53,3 +53,6 @@ Release/
 
 # VS Code settings
 .vscode 
+
+# editor backup files
+*~
