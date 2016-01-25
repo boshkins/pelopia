@@ -55,7 +55,7 @@ public:
     typedef map<Id, MatchQuality> HitMap;
     
     const Response& Search ( const char* p_text, Format p_format )
-    {
+    {   // no geofiltering
         HitMap hits;
         
         const Normalizer::Result& res = m_norm.Normalize ( p_text, strlen ( p_text ) );
@@ -100,6 +100,14 @@ public:
         return m_response;
     }
     
+    const Response& Search ( const char*        p_text,  
+                             const LatLon&      p_scope,
+                             const Distance&    p_radius,
+                             Format             p_format )
+    {
+        return Search ( p_text, p_format );
+    }
+    
     NormalizerNaive         m_norm;
     TextIndexNaiveReader*   m_reader;
     ResponseInternal        m_response;
@@ -123,16 +131,16 @@ Dataset :: Search ( const char* p_text, Format p_format )
     return m_impl -> Search ( p_text, p_format );
 }            
 
-//TODO: all the methods below
 const Response&  
-Dataset :: Search ( const char* text,
-                    const LatLon& scope,
-                    const Distance& radius,
-                    Format format )
+Dataset :: Search ( const char*     p_text,
+                    const LatLon&   p_scope,
+                    const Distance& p_radius,
+                    Format          p_format )
 {
-    throw logic_error ( "not implemented" );
+    return m_impl -> Search ( p_text, p_scope, p_radius, p_format );
 }            
 
+//TODO: all the methods below
 const Response&  
 Dataset :: Search ( const char* text,
                     const BoundingBox& scope,

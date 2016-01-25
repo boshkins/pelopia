@@ -844,18 +844,18 @@ An alternative installation structure, for Unix-like systems with root access, w
 |---|---|---|
 | ___1___ | | ___Various___ |
 | 1.1 | 1 | Logging to a file
-| 1.2 | 3 | Logging to a client-supplied stream
+| 1.2 | 1 | Exception handling wrapper
 | 1.3 | 2 | Use a dataset from Mapzen-produced JSON
-| 1.4 | 1 | Exception handling wrapper
+| 1.4 | 3 | Logging to a client-supplied stream
 | ___2___ |  | ___Search, Naive___ |  
 | 2.1 | 0 | Search using one term text, naive implementation
-| 2.2 | 2 | Search using one term text using focus BoundingBox, naive implementation
-| 2.3 | 2 | Search for address
-| 2.4 | 1 | Search for administrative area (city, state, etc.)
-| 2.5 | 0 | Search using one term text using focus LatLon, naive implementation
-| 2.6 | 2 | Search using multiple term text, naive implementation
-| 2.7 | 1 | Search using one incomplete term text, naive implementation
-| 2.8 | 1 | Search using multiple complete terms and one incomplete term text, naive implementation
+| 2.2 | 0 | Search using one term text using focus LatLon, naive implementation
+| 2.3 | 1 | Search for administrative area (city, state, etc.)
+| 2.4 | 1 | Search using one incomplete term text, naive implementation
+| 2.5 | 1 | Search using multiple complete terms and one incomplete term text, naive implementation
+| 2.6 | 2 | Search using one term text using focus BoundingBox, naive implementation
+| 2.7 | 2 | Search for address
+| 2.8 | 2 | Search using multiple term text, naive implementation
 | 2.9 | 2 | Autocomplete, naive
 | 2.10 | 3 | Reverse search, naive
 | ___3___  |  | ___Data___ |
@@ -870,18 +870,19 @@ An alternative installation structure, for Unix-like systems with root access, w
 | 4.6 | 3 | Autocomplete, optimized
 | 4.7 | 3 | Reverse search, optimized
 | ___5___ |  | ___APIs___  |
-| 5.1 | 0 | Search through a C API
-| 5.2 | 3 | Search through a Java API
-| 5.3 | 3 | Search through a Python API
-| 5.4 | 3 | Search through a Node.js API
-| 5.5 | 2 | Search through an Objective C API
-| 5.6 | 5 | Search through a Swift API
+| 5.1 | 0 | Search through a C++ API
+| 5.2 | 3 | Search through a Swift/Objective C API
+| 5.3 | 3 | Search through a C API
+| 5.4 | 3 | Search through a Java API
+| 5.5 | 3 | Search through a Python API
+| 5.6 | 3 | Search through a Node.js API
 | ___6___ |  | ___Build___ |
-| 6.1 | 3 | Download/build from sources in a clean environment on Windows
-| 6.2 | 1 | Download/build from sources in a clean environment on Linux
-| 6.3 | 3 | Download/build from sources in a clean environment on Android
-| 6.4 | 0 | Download/build from sources in a clean environment on OSX
-| 6.5 | 2 | Download/build from sources in a clean environment on iOS
+| 6.1 | 0 | Download/build from sources in a clean environment on Linux
+| 6.2 | 0 | Download/build from sources in a clean environment on OSX
+| 6.3 | 1 | Convert build system to CMake
+| 6.4 | 2 | Download/build from sources in a clean environment on iOS
+| 6.5 | 3 | Download/build from sources in a clean environment on Windows
+| 6.6 | 3 | Download/build from sources in a clean environment on Android
 | ___7___ |  | ___Install___ |
 | 7.1 | 3 | Installation package for Windows
 | 7.2 | 3 | Installation package for Linux

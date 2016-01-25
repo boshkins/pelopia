@@ -30,4 +30,6 @@ TODO: Write license
 
 ## Attribution
 
-This library uses [Catch](https://github.com/philsquared/Catch "Catch") for unit testing. 
+For unit testing, this project uses [Catch](https://github.com/philsquared/Catch "Catch"). 
+For reading of JSON files, the library uses [RapidJSON](http://rapidjson.org/)
+For handling UTF-8 encoded strings, the library uses [UTF8-CPP](http://utfcpp.sourceforge.net/)

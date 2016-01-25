@@ -9,7 +9,7 @@
 using namespace Mapzen::Pelopia;
 using namespace std;
 
-TEST_CASE("one term, no location") 
+TEST_CASE("Story 2.1. one term, no location") 
 {
     Dataset ds("./input/1.json");
     
@@ -51,6 +51,38 @@ TEST_CASE("one term, no location")
         REQUIRE ( 0 == resp . Count () );
     }
 }    
+
+TEST_CASE("story 2.2. one term, focus LatLon, found") 
+{   // there are 6 objects on a small street Warwickshire Road in Warwick, Bermuda.
+    // Focus on 2-mile radius with a center nearby, make sure all objects are reported
+    // and none from farther out (PA, FL). Check sort order, scoring 
+    Dataset ds("./input/1.json");
+    // the order in the dataset:
+    //  "8 Warwickshire Road, Warwick, Bermuda" -64.810363, 32.260517    
+    //  "3 Warwickshire Road, Warwick, Bermuda" -64.810874, 32.260458
+    //  "1 Warwickshire Road, Warwick, Bermuda" -64.810976, 32.260702    
+    //  "5 Warwickshire Road, Warwick, Bermuda" -64.810646, 32.260833    
+    //  "4 Warwickshire Road, Warwick, Bermuda" -64.810274, 32.260261    
+    //  "6 Warwickshire Road, Warwick, Bermuda" -64.810575, 32.260134
+        
+    const string Term = "Warwickshire";
+    LatLon focus ( 32.255, -64.805 ); // this is ~0.5 miles to the SouthEast from the street
+    
+    SECTION ( "unbound, sort order" ) 
+    {
+        const Response& resp = ds.Search ( Term . c_str (), focus ); // default distance = 0 ( unbound ) , default results = 10
+        REQUIRE ( DefaultResults == resp . Count () );
+        REQUIRE ( DefaultResults >= 6 );
+        // make sure top 6 are in Bermuda, sorted correctly (by distance from focus)
+        // sort by longitude for now; see if that represents the distance well enough when we have implemented distance calculation
+        REQUIRE ( string ( "6 Warwickshire Road, Warwick, Bermuda" ) == ds.Place( resp.Get( 0 ) ).Label() );   // -64.810575, 32.260134
+        REQUIRE ( string ( "4 Warwickshire Road, Warwick, Bermuda" ) == ds.Place( resp.Get( 1 ) ).Label() );   // -64.810274, 32.260261
+        REQUIRE ( string ( "3 Warwickshire Road, Warwick, Bermuda" ) == ds.Place( resp.Get( 2 ) ).Label() );   // -64.810874, 32.260458
+        REQUIRE ( string ( "8 Warwickshire Road, Warwick, Bermuda" ) == ds.Place( resp.Get( 3 ) ).Label() );   // -64.810363, 32.260517 
+        REQUIRE ( string ( "1 Warwickshire Road, Warwick, Bermuda" ) == ds.Place( resp.Get( 4 ) ).Label() );   // -64.810976, 32.260702  
+        REQUIRE ( string ( "5 Warwickshire Road, Warwick, Bermuda" ) == ds.Place( resp.Get( 5 ) ).Label() );   // -64.810646, 32.260833
+    }
+}
 
 int 
 main( int argc, char* argv[] )

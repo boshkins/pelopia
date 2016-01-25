@@ -36,10 +36,13 @@ TEST_CASE ( "Search one term, all defaults, not found" )
 TEST_CASE ( "Search one term, all defaults" ) 
 {
     Dataset ds ( "./input/one-term.json" );
-    const Response& resp = ds.Search("Warwickshire");
+    const char Term[] = "Warwickshire";
+    const Response& resp = ds.Search( Term );
     
     SECTION ( "Found something" )   { REQUIRE ( 0 != resp.Count() ); }
+    
     SECTION ( "Result count" )      { REQUIRE ( DefaultResults == resp.Count() ); }
+    
     SECTION ( "Results sorted" )    
     {
         MatchQuality prevScore;
@@ -57,6 +60,7 @@ TEST_CASE ( "Search one term, all defaults" )
             } 
         } 
     }
+    
     SECTION ( "Id in Results do not repeat" )    
     {
         set<Id> ids;
@@ -67,12 +71,36 @@ TEST_CASE ( "Search one term, all defaults" )
             ids.insert(id);
         } 
     }
+    
     SECTION ( "Hits contain the term" )    
     {
         for ( size_t i = 0; i < resp.Count(); ++i )
         {
             Id id = resp.Get(i);
+            REQUIRE ( string( ds.Place( id ).Label () ).find( Term ) != string::npos );
         } 
     }
 }
 
+TEST_CASE ( "Search one term, focus LatLon, unbound" ) 
+{
+    Dataset ds ( "./input/one-term.json" );
+    LatLon focus ( -81.598765, 30.21615 ); 
+    Distance distance ( Distance :: Miles, 0 );
+    const Response& resp = ds.Search ( "Warwickshire", focus, distance );
+    REQUIRE ( DefaultResults == resp.Count() ); 
+    
+    // TODO: check scores, sort order
+    
+    REQUIRE ( false ); 
+}
+
+TEST_CASE ( "Search one term, focus LatLon" ) 
+{
+    Dataset ds ( "./input/one-term.json" );
+    LatLon focus ( -81.598765, 30.21615 ); 
+    Distance distance ( Distance :: Miles, 10.0 );
+    const Response& resp = ds.Search ( "Warwickshire", focus, distance );
+    REQUIRE ( 3 == resp.Count() ); 
+    // TODO: check scores, sort order
+}
