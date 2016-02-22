@@ -1,6 +1,7 @@
 #include <pelopia/Pelopia.h>
 
 #include <sstream>
+#include <cmath>
 
 using namespace Mapzen :: Pelopia;
 using namespace std;
@@ -59,4 +60,24 @@ LatLon :: SetLongitude ( Coordinate p_lon )  throw ( std :: logic_error )
 {
     CheckLongitude ( p_lon );
     m_lon = p_lon;
+}
+
+static
+double
+DegreesToRadians ( double p_degrees )
+{
+    return p_degrees * 0.0174533;
+}
+
+Distance 
+LatLon :: DistanceTo ( const LatLon& p_that ) const
+{   // use equirectangular approximation ( see http://www.movable-type.co.uk/scripts/latlong.html )
+    double lat1 = DegreesToRadians ( m_lat );
+    double lat2 = DegreesToRadians ( p_that.m_lat );
+    double lon1 = DegreesToRadians ( m_lon );
+    double lon2 = DegreesToRadians ( p_that.m_lon );
+    auto x = ( lon2 - lon1 ) * cos( ( lat1 + lat2 )  / 2.0 );
+    auto y = lat2 - lat1;
+    const double EarthRadius = 6371.0;
+    return Distance ( Distance::Kilometers, sqrt ( x * x + y * y ) * EarthRadius ); 
 }

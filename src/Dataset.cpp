@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 #include <map>
+#include <limits>
 
 #include "GeocodeJSON_Reader_Rapid_DOM.h"
 #include "DataNaive.h"
@@ -18,19 +19,28 @@ class Dataset::Impl : public DataNaive
 {
 public:
     Impl(const char* p_filename) throw ( std :: invalid_argument, std :: logic_error )
-    :   DataNaive ( p_filename )
+    :   DataNaive ( p_filename ),
+        m_maxDistance ( Distance::Kilometers, 0 )
     {
         TextIndexNaiveWriter w;
         
-        // traverse data, add all terms to writer
+        // traverse data, add all terms to writer, calculate max distance
+        Coordinate minLat   = numeric_limits<Coordinate>::max();
+        Coordinate minLon   = numeric_limits<Coordinate>::max();
+        Coordinate maxLat   = numeric_limits<Coordinate>::lowest();
+        Coordinate maxLon   = numeric_limits<Coordinate>::lowest();
+        
         size_t count = DataNaive::Count();
         for ( size_t i = 0 ; i < count; ++i )
         {   // iterate over all searchable properties in Get(i+1), split into terms, normalize, add to writer
+            // calculate the maximum distance between features ion the dataset ( minLat,minLon to maxLat,maxLon )
+            const GeocodeJSON :: Feature& feature = DataNaive::Get( i + 1 );
+            
             for ( GeocodeJSON :: Feature :: SearchablePropertyId property = GeocodeJSON :: Feature :: Property_begin; 
                   property < GeocodeJSON :: Feature :: Property_end; 
                   property = (GeocodeJSON :: Feature :: SearchablePropertyId)((unsigned int) property + 1) )
             {
-                const char* value = DataNaive::Get( i + 1 ).SearchableProperty ( property );
+                const char* value = feature.SearchableProperty ( property );
                 if ( value != nullptr )
                 {
                     const Normalizer::Result& res = m_norm.Normalize ( value, strlen ( value ) );
@@ -44,8 +54,16 @@ public:
                     }
                 }
             }
+
+            // update min/max coords                    
+            minLat = min ( minLat, feature.GetGeometry()->Latitude() );                    
+            minLon = min ( minLon, feature.GetGeometry()->Longitude() );                    
+            maxLat = max ( maxLat, feature.GetGeometry()->Latitude() );                    
+            maxLon = max ( maxLon, feature.GetGeometry()->Longitude() );                    
         }
+        
         m_reader = new TextIndexNaiveReader ( w.DetachIndex () );
+        m_maxDistance = LatLon ( minLat, minLon ).DistanceTo ( LatLon ( maxLat, maxLon ) );
     }
     ~Impl()
     {
@@ -111,6 +129,7 @@ public:
     NormalizerNaive         m_norm;
     TextIndexNaiveReader*   m_reader;
     ResponseInternal        m_response;
+    Distance                m_maxDistance;
 };
 
 ///////////// Dataset
@@ -175,3 +194,8 @@ Dataset :: Place ( Id p_id ) const  throw ( std :: invalid_argument )
     return m_impl->Get(p_id);
 }            
 
+Distance 
+Dataset :: MaxDistance () const
+{
+    return m_impl->m_maxDistance;
+}

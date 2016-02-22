@@ -399,10 +399,14 @@ For location with shaped geometry, we will represent the object's location with 
 
 ####Geo distance calculations
 
-The distance between two points will be calculated assuming that the world is flat, which should be sufficient for relatively small areas. As an option, we can consider implementing more computationally expensive but more accurate Haversine formula [https://en.wikipedia.org/wiki/Haversine_formula](https://en.wikipedia.org/wiki/Haversine_formula). For now, the distance is calculated using the Pythagorean theorem:
+The distance between two points will be calculated using the Pythagorean theorem ( source: http://www.movable-type.co.uk/scripts/latlong.html, lat/lon values are in radians ):
 
 	Distance ( LatLon ( lat1, lon1 ), LatLon ( lat2, lon2 ) ) =
-											sqrt ( ( lat2 - lat1 ) ** 2 + ( lon2 - lon1 ) ** 2 )  
+		6,371km * sqrt ( ( ( lon2 - lon1 ) * cos ( lat1 + lat2 ) ) ** 2 + ( lat2 - lat1 ) ** 2 )  
+
+Note that the system-provided implementation of sqrt and cos are relatively slow and can become a performance bottleneck. If that happens, be prepared to replace them with less accurate but faster versions, e.g. based on using Taylor series with a low number of iterations (see https://en.wikipedia.org/wiki/Taylor_series ).
+
+As an option, we can consider implementing more computationally expensive but more accurate Haversine formula [https://en.wikipedia.org/wiki/Haversine_formula](https://en.wikipedia.org/wiki/Haversine_formula). 
 
 ####Full text search support
 **TextIndex**: a prefix tree with all words extracted from all relevant properties of all objects in the dataset, after analysis and transformation. Payload is a set of tuples: object Id, property Id, position inside property (offset/length; for multi-value properties also index of the sub-property).
@@ -496,7 +500,7 @@ To limit the amount of calculations, scoring is done after applying location fil
 
 ####Full text search
 
-For each term in a tokenized full text query, calculate its WEIGHT:
+For each term in a *normalized* full text query, calculate its WEIGHT:
 
 Term Frequency:
 
@@ -551,9 +555,31 @@ Second, geographical distance between the location and the center of the search 
 class Scorer
 {
 public:
-	virtual MatchQuality Score ( Dataset &, const vector < string > & query, const LatLon & center ) = 0;
+    void SetQuery ( const Normalizer :: Result & query );
+	virtual MatchQuality Score ( const GeocodeJSON::Feature& ) const = 0;
 }
 ```	
+
+A geo-distance aware scorer will accept additional information on the geography of dataset (i.e. its boundaries) in order to involve distance in the scoring function, and configuration-like parameters that control how much distance contributes to the overall matching score:
+
+```c++
+class ScorerWithDistance : public Scorer
+{
+public:
+    ScorerWithDistance ( const Dataset & ); 
+    void SetCoordinates ( const LatLon & );
+	virtual MatchQuality Score ( const GeocodeJSON::Feature& ) const = 0;
+}
+```	
+
+Our first implementation of Scorer will use *exp* decay function curve with the following parameters (see https://www.elastic.co/guide/en/elasticsearch/guide/current/decay-functions.html for an explanation of use):
+- origin: fixed at 0 (0 distance will always result in score of 1)
+- decay: fixed at 0.5 (score at distance *scale* - see below)
+- scale: distance that will result in score *decay*. Make it a fraction of X, where X the distance between the dataset's farthest points (the latter should be pre-calculated; we can use the length of the diagonal of the dataset's bounding box, if available. Alternatively, can use the diagonal of the bounding box of the search)
+- offset: fixed at 0. It may also make sense to make it a fraction of X, say S = 1%. In this case, *scale* will be set to ( X - S / 2 ) / 2
+
+Text SCORE will be multiplied by the geo score to produce the final MatchQuality returned by Scorer::Score().
+
 
 ###Dataset
 Originally, dataset will be represented as a plain JSON file, which will be parsed and converted into library's internal structures at the Dataset object initialization time. For large datasets that is likely to become prohibitively slow, at which point we will have to introduce an intermediate representation (**IR**) used to store dataset in a more ready-to-consume (and external memory-efficient) format than JSON.

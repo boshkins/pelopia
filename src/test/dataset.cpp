@@ -26,14 +26,14 @@ TEST_CASE ( "Place" )
     SECTION ( "Valid Id" )      { REQUIRE ( string ( "8 Warwickshire Road, Warwick, Bermuda" ) == ds.Place(2).Label() ); }
 }
 
-TEST_CASE ( "Search one term, all defaults, not found" ) 
+TEST_CASE ( "Dataset Search one term, all defaults, not found" ) 
 {
     Dataset ds ( "./input/one-term.json" );
     const Response& resp = ds.Search("Notthereshire");
     REQUIRE ( 0 == resp.Count() );
 }
 
-TEST_CASE ( "Search one term, all defaults" ) 
+TEST_CASE ( "Dataset Search one term, all defaults" ) 
 {
     Dataset ds ( "./input/one-term.json" );
     const char Term[] = "Warwickshire";
@@ -82,7 +82,7 @@ TEST_CASE ( "Search one term, all defaults" )
     }
 }
 
-TEST_CASE ( "Search one term, focus LatLon, unbound" ) 
+TEST_CASE ( "Dataset Search one term, focus LatLon, unbound" ) 
 {
     Dataset ds ( "./input/one-term.json" );
     LatLon focus ( -81.598765, 30.21615 ); 
@@ -95,7 +95,7 @@ TEST_CASE ( "Search one term, focus LatLon, unbound" )
     REQUIRE ( false ); 
 }
 
-TEST_CASE ( "Search one term, focus LatLon" ) 
+TEST_CASE ( "Dataset Search one term, focus LatLon, bound" ) 
 {
     Dataset ds ( "./input/one-term.json" );
     LatLon focus ( -81.598765, 30.21615 ); 
@@ -103,4 +103,10 @@ TEST_CASE ( "Search one term, focus LatLon" )
     const Response& resp = ds.Search ( "Warwickshire", focus, distance );
     REQUIRE ( 3 == resp.Count() ); 
     // TODO: check scores, sort order
+}
+
+TEST_CASE ( "Dataset MaxDistance" ) 
+{
+    Dataset ds ( "./input/one-term.json" );
+    REQUIRE ( LatLon ( 30.214098, -81.598765 ).DistanceTo ( LatLon (40.292543, -64.810274) ).GetKilometers() == Approx ( ds.MaxDistance().GetKilometers() ).epsilon ( 0.01 ) );
 }

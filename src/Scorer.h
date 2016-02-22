@@ -8,13 +8,13 @@
 /*
 * Project repository: https://github.com/boshkins/pelopia
 *
-* Internal interface for scoring features against a (normalized) query 
+* Internal interface for scoring Geocode features against a (normalized) query 
 */
 
-#include <string>
-#include <vector>
+#include <pelopia/Dataset.h>
+#include <pelopia/GeocodeJSON.h>
 
-#include <Dataset.h>
+#include "Normalizer.h"
 
 namespace Mapzen
 {
@@ -23,8 +23,19 @@ namespace Mapzen
         class Scorer
         {
         public:
-            MatchQuality Score ( Dataset &, const std::vector < std::string > & query, const LatLon & center ) const;
-        }
+            virtual ~Scorer () {}
+            
+            void SetQuery ( const Normalizer::Result & p_query ) { m_query = & p_query; } 
+            const Normalizer::Result* GetQuery () const { return m_query; }
+            
+            virtual MatchQuality Score ( const GeocodeJSON::Feature & ) const = 0;
+            
+        protected:
+            Scorer () : m_query ( nullptr ) {}
+            
+        private:
+            const Normalizer::Result* m_query;
+        };
     }
 }
 

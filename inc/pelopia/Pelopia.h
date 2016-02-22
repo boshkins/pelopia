@@ -13,6 +13,8 @@
 #include <cstdint>
 #include <stdexcept>
 
+#include <pelopia/Distance.h>
+
 namespace Mapzen
 {
 	namespace Pelopia
@@ -54,6 +56,8 @@ namespace Mapzen
             {
                 return ! ( *this == p_that );
             }
+            
+            Distance DistanceTo ( const LatLon& ) const;
             
         private:
 			Coordinate m_lat;	

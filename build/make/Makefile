@@ -23,14 +23,12 @@ SRC = \
     DataNaive \
     TextIndexNaive \
     NormalizerNaive \
+    ScorerWithDistance \
 
 OBJ = $(addprefix $(OBJDIR)/, $(addsuffix .o,$(SRC)))
 
 clean:
-	rm -rf $(LIBDIR)/libpelopia.a $(OBJDIR)
-	@$(MAKE) --no-print-directory -C test clean
-	@$(MAKE) --no-print-directory -C acceptance clean
-	@$(MAKE) --no-print-directory -C language clean
+	rm -rf $(LIBDIR)/libpelopia.a
 
 libpelopia: makedirs $(LIBDIR)/libpelopia.a
 

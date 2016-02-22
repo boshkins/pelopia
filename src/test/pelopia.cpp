@@ -64,3 +64,17 @@ TEST_CASE ( "LatLon setters coords out of range" )
     REQUIRE_THROWS ( v . SetLongitude ( 540.01 ) );
 }
 
+TEST_CASE ( "LatLon DistanceTo self" )
+{
+    LatLon v ( 1.2, 3.4 );
+    REQUIRE ( 0 == v.DistanceTo ( v ).GetKilometers() );
+}
+
+TEST_CASE ( "LatLon DistanceTo Manchester-Liverpool" )
+{
+    LatLon man ( 53.5, -2.2167 );
+    LatLon liv ( 53.4167, -3.0 );
+    REQUIRE ( 52.68 == Approx ( man.DistanceTo ( liv ).GetKilometers() ).epsilon( 0.001 ) );
+}
+
+

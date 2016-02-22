@@ -58,6 +58,9 @@ namespace Mapzen
             // Use Feature::Clone() to make a caller-owned copy
 			const GeocodeJSON :: Feature& Place ( Id ) const throw ( std :: invalid_argument );
             
+            // An estimation of the Maximum Distance between features in the dataset
+            Distance MaxDistance () const;
+            
         private:
             class Impl;
             
