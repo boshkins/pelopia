@@ -549,37 +549,53 @@ First, the coordinates of retrieved locations are used to filter out false hits 
 
 Second, geographical distance between the location and the center of the search region is used as a tie breaker for elements of the result set with matching scores. For a shaped location (when supported), it can be the distance between the center of the search region and the location's centroid. Alternatively, and more expensively calculation-wise, it can be the distance between the center of the search region and the location's nearest point to it.
 
+Our first implementation of geo scorer will use *exp* decay function curve with the following parameters (see https://www.elastic.co/guide/en/elasticsearch/guide/current/decay-functions.html for an explanation of use):
+- origin: fixed at 0 (0 distance will always result in score of 1)
+- decay: fixed at 0.5 (score at distance *scale* - see below)
+- scale: distance that will result in score *decay*. Make it a fraction of X, where X is the distance between the dataset's farthest points (the latter should be pre-calculated; we can use the length of the diagonal of the dataset's bounding box, if available. Alternatively, can use the diagonal of the bounding box of the search)
+- offset: fixed at 0. It may also make sense to make it a fraction of X, say S = 1%. In this case, *scale* will be set to ( X - S / 2 ) / 2
+
+The formula for geo score using exp decay is
+
+    GEOSCORE_EXP = exp ( Lambda * max ( 0, DistanceFromCenter - offset ) )
+    
+    Lambda = log ( Decay ) / Scale
+
 ####Scoring API
 
 ```c++
 class Scorer
 {
 public:
-    void SetQuery ( const Normalizer :: Result & query );
 	virtual MatchQuality Score ( const GeocodeJSON::Feature& ) const = 0;
 }
 ```	
 
-A geo-distance aware scorer will accept additional information on the geography of dataset (i.e. its boundaries) in order to involve distance in the scoring function, and configuration-like parameters that control how much distance contributes to the overall matching score:
+The text scorer will accept the original normalized query:
 
 ```c++
-class ScorerWithDistance : public Scorer
+class TextScorer : public Scorer
 {
 public:
-    ScorerWithDistance ( const Dataset & ); 
-    void SetCoordinates ( const LatLon & );
-	virtual MatchQuality Score ( const GeocodeJSON::Feature& ) const = 0;
+    TextScorer ( const Dataset & ); 
+    void SetQuery ( const Normalizer :: Result & query );
+	virtual MatchQuality Score ( const GeocodeJSON::Feature& ) const;
 }
 ```	
 
-Our first implementation of Scorer will use *exp* decay function curve with the following parameters (see https://www.elastic.co/guide/en/elasticsearch/guide/current/decay-functions.html for an explanation of use):
-- origin: fixed at 0 (0 distance will always result in score of 1)
-- decay: fixed at 0.5 (score at distance *scale* - see below)
-- scale: distance that will result in score *decay*. Make it a fraction of X, where X the distance between the dataset's farthest points (the latter should be pre-calculated; we can use the length of the diagonal of the dataset's bounding box, if available. Alternatively, can use the diagonal of the bounding box of the search)
-- offset: fixed at 0. It may also make sense to make it a fraction of X, say S = 1%. In this case, *scale* will be set to ( X - S / 2 ) / 2
+The geo scorer will accept additional information on the geography of dataset (i.e. its boundaries) in order to involve distance in the scoring function, and configuration-like parameters that control how much distance contributes to the overall matching score:
 
-Text SCORE will be multiplied by the geo score to produce the final MatchQuality returned by Scorer::Score().
+```c++
+class GetScorer : public Scorer
+{
+public:
+    GetScorer ( const Dataset & ); 
+    void SetCenter ( const LatLon & ); 
+	virtual MatchQuality Score ( const GeocodeJSON::Feature& ) const;
+}
+```	
 
+Scores returned by the two scorer objects will be multiplied to produce the final MatchQuality used to sort entries in the Reponse.
 
 ###Dataset
 Originally, dataset will be represented as a plain JSON file, which will be parsed and converted into library's internal structures at the Dataset object initialization time. For large datasets that is likely to become prohibitively slow, at which point we will have to introduce an intermediate representation (**IR**) used to store dataset in a more ready-to-consume (and external memory-efficient) format than JSON.

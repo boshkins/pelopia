@@ -23,7 +23,7 @@ SRC = \
     DataNaive \
     TextIndexNaive \
     NormalizerNaive \
-    ScorerWithDistance \
+    GeoScorer \
 
 OBJ = $(addprefix $(OBJDIR)/, $(addsuffix .o,$(SRC)))
 
