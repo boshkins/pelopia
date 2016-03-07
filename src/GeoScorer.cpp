@@ -5,7 +5,7 @@
 /*
 * Project repository: https://github.com/boshkins/pelopia
 *
-* Implementation of Feature Scorer with text and distance scoring 
+* Implementation of Feature Scorer with geo distance scoring
 */
 
 #include "GeoScorer.h"
@@ -20,9 +20,9 @@ const double ScaleFactor = 0.5;
 const double OffsetKm = 0.0;
 
 GeoScorer::GeoScorer ( const Dataset & p_dataset, const LatLon & p_center )
-:   m_dataset ( p_dataset ), 
+:   Scorer ( p_dataset ),
     m_center ( p_center ),
-    m_lambda ( log ( Decay ) / ( m_dataset.MaxDistance().GetKilometers() * ScaleFactor ) ) 
+    m_lambda ( log ( Decay ) / ( GetDataset().MaxDistance().GetKilometers() * ScaleFactor ) )
 {
 }
 
@@ -30,18 +30,12 @@ GeoScorer::~GeoScorer ()
 {
 }
 
-
-#include <iostream>
-
-MatchQuality 
-GeoScorer::Score ( const GeocodeJSON::Feature & p_feature ) const
+MatchQuality
+GeoScorer::Score ( Id p_id ) const
 {
-    const LatLon latLon ( p_feature.GetGeometry()->Latitude(), p_feature.GetGeometry()->Longitude() );
-std::cout << "center=" << m_center.Latitude() << ", " << m_center.Longitude()  << std::endl; 
-std::cout << "latLon=" << latLon.Latitude() << ", " << latLon.Longitude()  << std::endl; 
-    
+    const GeocodeJSON::Geometry& coords = *GetDataset().Place( p_id ).GetGeometry();
+    const LatLon latLon ( coords.Latitude(), coords.Longitude() );
     const double fromCenterKm = m_center.DistanceTo( latLon ).GetKilometers();
-std::cout << "fromCenterKm=" << fromCenterKm << std::endl; 
     if ( fromCenterKm > OffsetKm )
     {
         return exp ( m_lambda * ( fromCenterKm - OffsetKm ) );

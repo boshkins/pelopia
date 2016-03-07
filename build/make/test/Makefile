@@ -18,6 +18,7 @@ SRC = main \
     textindexnaive \
     normalizernaive \
     geoscorer \
+    textscorer \
     dataset \
 
 # libpostal

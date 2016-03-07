@@ -455,6 +455,7 @@ public:
 	class Payload // naive: vector < TermUse >
 	{	// the collection is sorted by increasing object Id, then by increasing index, then by increasing position  
 		virtual size_t Count () const = 0;
+        virtual size_t FeatureCount () const = 0; // # of distinct feature Ids
 		virtual const TermUse& GetTermUse ( size_t index ) const throw (index_out_of_bounds) = 0;
 	};
 
@@ -498,20 +499,21 @@ There should be a mechanism for overriding the library's internal scoring functi
 
 To limit the amount of calculations, scoring is done after applying location filtering.
 
-####Full text search
+####Text scoring
 
-For each term in a *normalized* full text query, calculate its WEIGHT:
+NOTE. Currently, we use the "Label" property of GeocodeJSON object to represent its full name and address. The text of the property should be normalized before it is used for text scoring. 
+
+The calculation of TEXTSCORE is done for every GeocodeJSON object (feature) that passes filtering:
+
+For each term in the *normalized* full text query, calculate its WEIGHT:
 
 Term Frequency:
 
-	TF = sqrt ( # of appearances of the term in the field )
+	TF = sqrt ( # of appearances of the term in the *Label* field of the feature )
 
-Inverse document frequency: the more often the term appears in the dataset, the less relevant it is. This value can be pre-calculated for every term in the dataset, at the cost of increased memory footprint of the dataset.
+Inverse document frequency: the more often the term appears in the dataset, the less relevant it is. This value can be pre-calculated for every term in the dataset.
 
-	IDF = 1 + log ( totalFields / ( 1 + # of fields containing the term ) )   
-
-NOTE. Currently, by "field" in this section we understand "address". However, that may include other GeoJSIN fields, depending on the answer to the
-# **Big question: which properties are we searching on?**  #
+	IDF = 1 + log ( totalFeatures / ( 1 + # of features containing the term ) )   
 
 
 Field-length norm: the more words in the field, the lower relevance of words in it:
@@ -535,7 +537,7 @@ Query coordination: rewards fields that contain a higher percentage of query ter
 
 Scoring function, similar to Lucene's Practical Scoring Function:
 
-	SCORE = QUERY_NORM * COORD * sum ( WEIGHT,  for each term in query )
+	TEXTSCORE = QUERY_NORM * COORD * sum ( WEIGHT,  for each term in query )
 
 In addition, boost score of fields where the order of found terms matches the order of terms in the query. Details **TBD**
 
@@ -567,7 +569,10 @@ The formula for geo score using exp decay is
 class Scorer
 {
 public:
-	virtual MatchQuality Score ( const GeocodeJSON::Feature& ) const = 0;
+	virtual MatchQuality Score ( Id feature ) const = 0;
+	
+protected:
+    Scorer ( const Dataset& );
 }
 ```	
 
@@ -577,25 +582,23 @@ The text scorer will accept the original normalized query:
 class TextScorer : public Scorer
 {
 public:
-    TextScorer ( const Dataset & ); 
-    void SetQuery ( const Normalizer :: Result & query );
-	virtual MatchQuality Score ( const GeocodeJSON::Feature& ) const;
+    TextScorer ( const Dataset &, const Normalizer :: Result & query );
+	virtual MatchQuality Score ( Id feature ) const;
 }
 ```	
 
-The geo scorer will accept additional information on the geography of dataset (i.e. its boundaries) in order to involve distance in the scoring function, and configuration-like parameters that control how much distance contributes to the overall matching score:
+The geo scorer will accept additional information on the geography of dataset (i.e. its boundaries) in order to involve distance in the scoring function:
 
 ```c++
-class GetScorer : public Scorer
+class GeoScorer : public Scorer
 {
 public:
-    GetScorer ( const Dataset & ); 
-    void SetCenter ( const LatLon & ); 
-	virtual MatchQuality Score ( const GeocodeJSON::Feature& ) const;
+    GeoScorer ( const Dataset &, const LatLon & center ); 
+	virtual MatchQuality Score ( Id feature ) const;
 }
 ```	
 
-Scores returned by the two scorer objects will be multiplied to produce the final MatchQuality used to sort entries in the Reponse.
+Scores returned by the two scorer objects will be multiplied (possibly weighed based on configuration-like parameters in Dataset) to produce the final MatchQuality used to sort entries in the Reponse. 
 
 ###Dataset
 Originally, dataset will be represented as a plain JSON file, which will be parsed and converted into library's internal structures at the Dataset object initialization time. For large datasets that is likely to become prohibitively slow, at which point we will have to introduce an intermediate representation (**IR**) used to store dataset in a more ready-to-consume (and external memory-efficient) format than JSON.
@@ -639,7 +642,7 @@ public:
     
     // phrase is in UTF-8-encoded Unicode
     // the returned reference stays valid until the next call to Normalize
-    virtual const Result& Normalize ( const char* phrase, size_t sizeBytes ) = 0;
+    virtual const Result& Normalize ( const char* phrase ) = 0;
 }
 ```	
 

@@ -19,38 +19,38 @@ namespace Mapzen
 	namespace Pelopia
 	{
         class TextIndexNaive;
-        
+
         class TextIndexNaiveWriter : public TextIndexWriter
-        {    
+        {
         public:
             TextIndexNaiveWriter();
             virtual ~TextIndexNaiveWriter();
-                    
-            virtual void AddTermUse ( const std :: string& term, 
-                                      Id object, 
-                                      GeocodeJSON :: Feature :: SearchablePropertyId, 
+
+            virtual void AddTermUse ( const std :: string& term,
+                                      Id object,
+                                      GeocodeJSON :: Feature :: SearchablePropertyId,
                                       size_t index,
                                       size_t offset );
-                                      
+
             TextIndexNaive* DetachIndex(); // ownership transferred to the caller
-            
+
         private:
             TextIndexNaive* m_index;
         };
-        
+
         class TextIndexNaiveReader : public TextIndexReader
-        {   
+        {
         public:
             TextIndexNaiveReader ( TextIndexNaive* ); // assumes ownership of the index
 
             virtual ~TextIndexNaiveReader();
-            
-            virtual const Node* Locate ( const std :: string& prefix ) const;
-            
+
+            virtual const Node* Locate ( const char32_t* prefix ) const;
+
         private:
             TextIndexNaive* m_index;
         };
-        
+
     }
 }
 

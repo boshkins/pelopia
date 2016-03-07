@@ -8,7 +8,7 @@
 /*
 * Project repository: https://github.com/boshkins/pelopia
 *
-* Internal interface for address normalization 
+* Internal interface for address normalization
 */
 
 #include "Normalizer.h"
@@ -22,9 +22,9 @@ namespace Mapzen
         public:
             NormalizerNaive();
             virtual ~NormalizerNaive();
-            
-            virtual const Result& Normalize ( const char* phrase, size_t sizeBytes );
-            
+
+            virtual const Result& Normalize ( const char* phrase );
+
         private:
             std::vector < char32_t > m_strings;
         };

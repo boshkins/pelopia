@@ -8,7 +8,7 @@
 /*
 * Project repository: https://github.com/boshkins/pelopia
 *
-* Feature Scorer with text and distance scoring 
+* Feature Scorer with geo distance scoring
 */
 
 #include "Scorer.h"
@@ -20,15 +20,12 @@ namespace Mapzen
         class GeoScorer : public Scorer
         {
         public:
-            GeoScorer ( const Dataset &, const LatLon & p_center ); 
+            GeoScorer ( const Dataset &, const LatLon & p_center );
             virtual ~GeoScorer();
-            
-            const LatLon & GetCenter () const { return m_center; }
-            
-            virtual MatchQuality Score ( const GeocodeJSON::Feature & ) const;
-            
+
+            virtual MatchQuality Score ( Id ) const;
+
         private:
-            const Dataset&  m_dataset;
             LatLon          m_center;
             const double    m_lambda;
         };

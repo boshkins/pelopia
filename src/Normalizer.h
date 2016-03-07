@@ -8,7 +8,7 @@
 /*
 * Project repository: https://github.com/boshkins/pelopia
 *
-* Internal interface for address normalization 
+* Internal interface for address normalization
 */
 
 #include <cstring>
@@ -26,16 +26,16 @@ namespace Mapzen
                 size_t lengthBytes;     // original term, size up to and excluding the following punctuation/white space
                 const char32_t* norm;   // NUL-terminated normalized term in 32-bit Unicode
             } NormalizedTerm;
-            
+
             typedef std::vector < NormalizedTerm > Result;
-            
+
         public:
             virtual ~Normalizer() {}
-            
+
             // phrase is in UTF-8-encoded Unicode
             // the returned reference stays valid until the next call to Normalize
-            virtual const Result& Normalize ( const char* phrase, size_t sizeBytes ) = 0;
-            
+            virtual const Result& Normalize ( const char* phrase ) = 0;
+
         protected:
             Result m_result;
         };
