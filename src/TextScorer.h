@@ -1,5 +1,5 @@
-#ifndef Mapzen_Pelopia_ScorerWithExpDistance_h
-#define Mapzen_Pelopia_ScorerWithExpDistance_h
+#ifndef Mapzen_Pelopia_TextScorer_h
+#define Mapzen_Pelopia_TextScorer_h
 
 /*
 * Copyright notice: TBD

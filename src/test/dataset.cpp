@@ -91,20 +91,46 @@ TEST_CASE ( "Dataset Search one term, all defaults" )
 TEST_CASE ( "Dataset Search one term, focus LatLon, unbound" )
 {
     Dataset ds ( "./input/one-term.json" );
-    LatLon focus ( -81.598765, 30.21615 );
+    LatLon focus ( 30.21615, -81.598765 );  // Jacksonville FL
     Distance distance ( Distance :: Miles, 0 );
     const Response& resp = ds.Search ( "Warwickshire", focus, distance );
     REQUIRE ( DefaultResults == resp.Count() );
 
-    // TODO: check scores, sort order
+    Id id;
+    MatchQuality score;
 
-    REQUIRE ( false );
+    REQUIRE ( resp.Get ( 0, id, score ) );
+    REQUIRE ( id == 9 );
+    REQUIRE ( score == 1.0 );  // Jacksonville FL, right at focus
+
+    MatchQuality prev_score;
+    prev_score = score;
+    REQUIRE ( resp.Get ( 1, id, score ) );
+    REQUIRE ( id == 10 );   // Jacksonville FL
+    REQUIRE ( score < prev_score );
+
+    prev_score = score;
+    REQUIRE ( resp.Get ( 2, id, score ) );
+    REQUIRE ( id == 8 );   // Jacksonville FL
+    REQUIRE ( score < prev_score );
+
+    prev_score = score;
+    REQUIRE ( resp.Get ( 3, id, score ) );
+    REQUIRE ( id == 1 );    // Buckingham PA
+    REQUIRE ( score < prev_score );
+
+    // etc.
+    prev_score = score;
+    REQUIRE ( resp.Get ( 4, id, score ) );
+    REQUIRE ( id == 4 );    // Warwick, Bermuda
+    REQUIRE ( score < prev_score );
+
 }
 
 TEST_CASE ( "Dataset Search one term, focus LatLon, bound" )
 {
     Dataset ds ( "./input/one-term.json" );
-    LatLon focus ( -81.598765, 30.21615 );
+    LatLon focus ( 30.21615, -81.598765 );  // Jacksonville FL
     Distance distance ( Distance :: Miles, 10.0 );
     const Response& resp = ds.Search ( "Warwickshire", focus, distance );
     REQUIRE ( 3 == resp.Count() );

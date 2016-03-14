@@ -20,11 +20,13 @@ namespace Mapzen
 		public:
 			typedef enum { Miles, Kilometers } Units;
 
+			Distance(); // 0 distance
 			Distance(Units, double);
+			Distance(const Distance&);
 
 			double GetMiles() const;
 			double GetKilometers() const { return m_distanceKm; }
-          
+
         private:
             double m_distanceKm;
 		};

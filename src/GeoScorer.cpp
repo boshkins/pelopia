@@ -14,7 +14,6 @@
 
 using namespace Mapzen::Pelopia;
 
-const double Origin = 0.0;
 const double Decay = 0.5;
 const double ScaleFactor = 0.5;
 const double OffsetKm = 0.0;
