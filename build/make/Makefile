@@ -25,6 +25,7 @@ SRC = \
     NormalizerNaive \
     GeoScorer \
     TextScorer \
+    CoordinateIndex \
 
 OBJ = $(addprefix $(OBJDIR)/, $(addsuffix .o,$(SRC)))
 
@@ -34,16 +35,15 @@ clean:
 libpelopia: makedirs $(LIBDIR)/libpelopia.a
 
 $(LIBDIR)/libpelopia.a: $(OBJ)
-	ar -rc $@ $^ 
+	ar -rc $@ $^
 
 test: std
 	$(MAKE) -C test
-    
-accept: std    
+
+accept: std
 	-$(MAKE) -C acceptance
-    
+
 lang: std
 	@$(MAKE) -C language
 
 .PHONY: std libpelopia test clean accept lang
- 

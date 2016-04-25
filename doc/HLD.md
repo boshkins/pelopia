@@ -339,7 +339,7 @@ To support search filtered by a BoundingBox, we need an ability to filter locati
 
 **PointLatIndex**: an array of pairs "coordinate, object Id" sorted by coordinate (latitude). This index will only contain objects with location specified as a point. There may be multiple entries with matching coordinates.
 
-The principal operation will be to extract the subset of points located between 2 coordinates [*low* .. *high*]:
+The principal operation will be to extract the subset of points located between 2 coordinates [*low* .. *high*], represented as an iterator:
 
 	FindSegment ( CoordIndex, LowCoord, HighCoord ) : ( firstIdx, lastIdx )
 		firstIdx = FindFirstGreaterThanOrEqual ( CoordIndex, 0, size ( CoordIndex ), LowCoord )  
@@ -347,13 +347,15 @@ The principal operation will be to extract the subset of points located between 
 											firstIdx,
 											size ( CoordIndex ),
 											HighCoord )  
-		return ( firstIdx, lastIdx )
+		return Iterator ( firstIdx, lastIdx )
 
 The coordinate will be initially represented as a double. The alternatives would be float and integer-based fixed point; it may make sense to decrease precision of the coordinate to save space in this structure. The full-precision coordinates extracted from the objects will then be used at the scoring stage to filter out false hits, if necessary.
 
 For additional memory savings at the cost of lookup speed, pairs "coordinate, object Id" may be packed into fewer than 12 bytes (12 = 8 for double + 4 for Id). The minimum number of bits required to represent all entries can be calculated at the construction time and saved with the structure.  
 
 The low level design should allow easy switching between representations. Some experimentation will be required to estimate memory/speed tradeoffs between different representations.
+
+A simplistic implementation of the index may use STL multimap template. 
 
 **PointLonIndex**: a similar structure using longitude as the coordinate.
 

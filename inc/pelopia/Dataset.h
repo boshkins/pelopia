@@ -67,6 +67,10 @@ namespace Mapzen
             size_t FeatureCount () const;
 
         private:
+            Dataset(const Dataset&);
+            Dataset& operator= (const Dataset&);
+
+        private:
             class Impl;
 
             Impl* m_impl;
