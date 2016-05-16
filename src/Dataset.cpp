@@ -11,6 +11,7 @@
 #include "ResponseInternal.h"
 #include "TextScorer.h"
 #include "GeoScorer.h"
+#include "CoordinateIndex.h"
 
 using namespace Mapzen :: Pelopia;
 using namespace std;
@@ -36,7 +37,9 @@ public:
         for( size_t i = 0 ; i < count; ++i )
         {   // iterate over all searchable properties in Get(i+1), split into terms, normalize, add to writer
             // calculate the maximum distance between features ion the dataset( minLat,minLon to maxLat,maxLon )
-            const GeocodeJSON :: Feature& feature = DataNaive::Get( i + 1 );
+            Id id = i + 1;
+
+            const GeocodeJSON :: Feature& feature = DataNaive::Get( id );
 
             for( GeocodeJSON :: Feature :: SearchablePropertyId property = GeocodeJSON :: Feature :: Property_begin;
                   property < GeocodeJSON :: Feature :: Property_end;
@@ -49,13 +52,17 @@ public:
                     for( Normalizer::Result::const_iterator it = res.begin(); it != res.end(); ++it )
                     {
                         w.AddTermUse( string( value + it->startBytes, it->lengthBytes ), //TODO( pass char32_t* it->m_norm ) to avoid an extra conversion from UTF8
-                                       Id(i + 1 ),
+                                       id,
                                        property,
                                        0,   // TODO: handle indexed properrties
                                        it->startBytes );
                     }
                 }
             }
+
+            // add to coord indexes
+            m_pointLatIndex.Insert ( feature.GetGeometry()->Latitude(), id );
+            m_pointLonIndex.Insert ( feature.GetGeometry()->Longitude(), id );
 
             // update min/max coords
             minLat = min( minLat, feature.GetGeometry()->Latitude() );
@@ -122,6 +129,8 @@ public:
     TextIndexNaiveReader*   m_reader;
     ResponseInternal        m_response;
     Distance                m_maxDistance;
+    CoordinateIndex         m_pointLatIndex;
+    CoordinateIndex         m_pointLonIndex;
 };
 
 ///////////// Dataset
@@ -151,8 +160,10 @@ Dataset::Search( const char*        p_text,
                  Format             p_format )
 {
     const Normalizer::Result& res = m_impl->m_norm.Normalize( p_text ); //TODO: refactor
+
     //TODO: apply geo filtering ( p_scope, p_radius )
     GeoScorer gs( *this, p_scope ); // TODO: combine with TextScorer
+
     return m_impl->Search( res, gs, p_format );
 }
 

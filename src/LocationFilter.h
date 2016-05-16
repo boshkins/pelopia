@@ -12,6 +12,10 @@
 *
 */
 
+#include <pelopia/Pelopia.h>
+
+#include <vector>
+
 namespace Mapzen
 {
 	namespace Pelopia
@@ -20,14 +24,22 @@ namespace Mapzen
         class LocationFilter
         {
         public:
-            LocationFilter ( size_t count );
+            LocationFilter ( Id maxId ); // sets all to 0
             virtual ~LocationFilter() {};
 
-            void Set ( size_t p_index );
-            void Unset ( size_t p_index );
-            bool IsSet ( size_t p_index ) const;
+            Id MaxId () const;
+
+            // IDs are 1-based
+            void Set ( Id p_id );
+            void Unset ( Id p_id );
+            bool IsSet ( Id p_id ) const;
 
             LocationFilter& And ( const LocationFilter& );
+
+        private:
+            void CheckId ( Id p_id ) const;
+
+            std::vector<bool> m_body;
         };
 
     }

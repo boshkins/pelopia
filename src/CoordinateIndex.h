@@ -38,13 +38,13 @@ namespace Mapzen
                 bool operator == (const ConstIterator&) const;
                 bool operator != (const ConstIterator& p_that) const { return ! operator == ( p_that ); }
 
-                ConstIterator& operator ++ ();
-                ConstIterator& operator ++ (int); // postfix
+                ConstIterator operator ++ ();
+                ConstIterator operator ++ (int); // postfix
 
             private:
                 friend class CoordinateIndex;
 
-                ConstIterator( CoordinateIndex::Impl&, Coordinate first, Coordinate last );
+                ConstIterator( const CoordinateIndex::Impl&, Coordinate first, Coordinate last );
                 ConstIterator(); // an end iterator
 
                 class Impl;

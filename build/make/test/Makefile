@@ -21,6 +21,7 @@ SRC = main \
     textscorer \
     dataset \
     coordinateindex \
+    locationfilter  \
 
 # libpostal
 
