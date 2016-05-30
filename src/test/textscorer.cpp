@@ -24,6 +24,7 @@ TEST_CASE ( "TextScorer One-term" )
         using TextScorer::TermFrequency;
         using TextScorer::InverseDocumentFrequency;
         using TextScorer::TermWeight;
+        using TextScorer::QueryCoordination;
     };
     NormalizerNaive norm;
 
@@ -85,6 +86,35 @@ TEST_CASE ( "TextScorer One-term" )
         Normalizer::Result normQuery = termNorm.Normalize ( "Solovki" );
         double tw = TestScorer ( ds, normQuery ).TermWeight ( normField, normQuery [ 0 ].norm );
         REQUIRE ( 0.0 == tw ); // not in the address
+    }
+
+    SECTION ("QueryCoordination, all terms")
+    {
+        Normalizer::Result normField = norm.Normalize ( ds.Place(2).Label() );  // 8 Warwickshire Road, Warwick, Bermuda
+        Normalizer::Result normQuery = termNorm.Normalize ( "Warwickshire Road Warwick Warwick" );
+        REQUIRE ( 1 == TestScorer ( ds, normQuery ).QueryCoordination ( normField ) ); // all terms are in the address
+    }
+    SECTION ("QueryCoordination, some terms")
+    {
+        Normalizer::Result normField = norm.Normalize ( ds.Place(2).Label() );  // 8 Warwickshire Road, Warwick, Bermuda
+        Normalizer::Result normQuery = termNorm.Normalize ( "Big House Warwick Bermuda" );
+        REQUIRE ( 0.5 == TestScorer ( ds, normQuery ).QueryCoordination ( normField ) ); // 2 out of 4 terms are in the address
+    }
+    SECTION ("QueryCoordination, not in address")
+    {
+        Normalizer::Result normField = norm.Normalize ( ds.Place(2).Label() );  // 8 Warwickshire Road, Warwick, Bermuda
+        Normalizer::Result normQuery = termNorm.Normalize ( "Solovki building 1" );
+        REQUIRE ( 0.0 == TestScorer ( ds, normQuery ).QueryCoordination ( normField ) ); // no terms in the address
+    }
+
+    SECTION ("QueryNormalization")
+    {
+        FAIL("TODO");
+    }
+
+    SECTION ("Score, full")
+    {
+        FAIL("TODO");
     }
 
 }

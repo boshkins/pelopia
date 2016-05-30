@@ -23,16 +23,20 @@ namespace Mapzen
             //
             // All 2-LatLon calls follow the order
             // TopLeft - BottomRight
-        
-			// all constructors will recalculate longitudes to 0 .. 540 if the 180 
+
+			// all constructors will recalculate longitudes to 0 .. 540 if the 180
 			//  meridian lies within the box
 			BoundingBox (); // all 0s
 			BoundingBox ( LatLon p_topLeft, LatLon p_bottomRight )  throw ( std :: logic_error );
 			BoundingBox (
-				Coordinate latTop, 
+				Coordinate latTop,
                 Coordinate lonLeft,
 				Coordinate latBottom,
 				Coordinate lonRight )  throw ( std :: logic_error );
+
+			// A Bounding Box enclosing a circle with the given center and radius,
+			// using equirectangular approximation of the Earth's surface'
+			BoundingBox ( LatLon p_center, const Distance& p_dist )  throw ( std :: logic_error );
 
 			Coordinate Top() const      { return m_topLeft . Latitude (); }
 			Coordinate Left() const     { return m_topLeft . Longitude (); }
@@ -41,20 +45,20 @@ namespace Mapzen
 
 			const LatLon& TopLeft() const { return m_topLeft; }
 			const LatLon& BottomRight() const { return m_bottomRight; }
-            
-            bool operator == ( const BoundingBox& p_that ) const 
+
+            bool operator == ( const BoundingBox& p_that ) const
             {
                 return m_topLeft == p_that . m_topLeft && m_bottomRight == p_that . m_bottomRight;
             }
-            bool operator != ( const BoundingBox& p_that ) const 
+            bool operator != ( const BoundingBox& p_that ) const
             {
                 return ! ( *this == p_that );
             }
-            
+
 			// the setters take care of translation of longitude around the 180 meridian, if necessary
 			void SetCoordinates ( const LatLon& p_topLeft,  const LatLon& p_bottomRight )  throw ( std :: logic_error );
-			void SetCoordinates ( 
-				Coordinate latTop, 
+			void SetCoordinates (
+				Coordinate latTop,
 				Coordinate lonLeft,
 				Coordinate latBottom,
 				Coordinate lonRight )  throw ( std :: logic_error );

@@ -1,4 +1,5 @@
 default: pelopia
+test: pelopia
 
 TOP = $(abspath ../../..)
 MODULE = src/test

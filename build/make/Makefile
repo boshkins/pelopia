@@ -26,7 +26,9 @@ SRC = \
     GeoScorer \
     TextScorer \
     CoordinateIndex \
-    LocationFilter
+    LocationFilter \
+    GeoTextScorer \
+    FilteringGeoTextScorer \
 
 OBJ = $(addprefix $(OBJDIR)/, $(addsuffix .o,$(SRC)))
 

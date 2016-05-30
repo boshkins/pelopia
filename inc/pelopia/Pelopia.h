@@ -22,7 +22,7 @@ namespace Mapzen
 
 		typedef uint32_t ResultCount;
 
-		typedef struct 
+		typedef struct
 		{
 			ResultCount maxResults;
 		} Format;
@@ -31,37 +31,42 @@ namespace Mapzen
 
 		typedef double Coordinate; // degrees; underlying datatype is likely to change
 
+		const Distance EarthRadius ( Distance :: Kilometers, 6371.0 );
+
+		extern double DegreesToRadians ( double p_degrees );
+		extern double RadiansToDegrees ( double p_radians );
+
         // class LatLon:
         // Latitude in the range of -90 .. 90
         // Longitude in the range -180 .. 540; the extended range may be used to handle discontinuity
         //                                      at the 180 meridian
         // the constructor and setters will throw if latitude / longitude is outside of its range
-		class LatLon 
+		class LatLon
 		{
         public:
-			LatLon (); // 0, 0  
-			LatLon ( Coordinate p_lat, Coordinate p_lon ) throw ( std :: logic_error ); 
+			LatLon (); // 0, 0
+			LatLon ( Coordinate p_lat, Coordinate p_lon ) throw ( std :: logic_error );
 
 			Coordinate Latitude  () const { return m_lat; }
 			Coordinate Longitude () const { return m_lon; }
-            
+
 			void SetLatitude  ( Coordinate )  throw ( std :: logic_error );
 			void SetLongitude ( Coordinate ) throw ( std :: logic_error );
 
-            bool operator == ( const LatLon& p_that ) const 
+            bool operator == ( const LatLon& p_that ) const
             {
                 return m_lat == p_that . m_lat && m_lon == p_that . m_lon;
             }
-            bool operator != ( const LatLon& p_that ) const 
+            bool operator != ( const LatLon& p_that ) const
             {
                 return ! ( *this == p_that );
             }
-            
+
             Distance DistanceTo ( const LatLon& ) const;
-            
+
         private:
-			Coordinate m_lat;	
-			Coordinate m_lon; 
+			Coordinate m_lat;
+			Coordinate m_lon;
         };
 
 		typedef uint64_t Id;

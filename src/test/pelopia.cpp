@@ -7,7 +7,7 @@ using namespace Mapzen :: Pelopia;
 TEST_CASE ( "LatLon ctor, getters, equality" )
 {
     LatLon v ( 1.2, 3.4 );
-    
+
     SECTION ( "getters")
     {
         REQUIRE ( 1.2 == v . Latitude () );
@@ -42,10 +42,10 @@ TEST_CASE ( "LatLon default ctor" )
 TEST_CASE ( "LatLon setters" )
 {
     LatLon v ( 1.2, 3.4 );
-    
+
     v . SetLatitude ( 4.5 );
     REQUIRE ( 4.5 == v . Latitude () );
-    
+
     v . SetLongitude ( 6.7 );
     REQUIRE ( 6.7 == v . Longitude () );
 }
@@ -53,7 +53,7 @@ TEST_CASE ( "LatLon setters" )
 TEST_CASE ( "LatLon setters coords out of range" )
 {
     LatLon v ( 1.2, 3.4 );
-    
+
     REQUIRE_NOTHROW ( v . SetLatitude ( -90.0 ) );
     REQUIRE_THROWS ( v . SetLatitude ( -90.01 ) );
     REQUIRE_NOTHROW ( v . SetLatitude ( 90.0 ) );
@@ -77,4 +77,13 @@ TEST_CASE ( "LatLon DistanceTo Manchester-Liverpool" )
     REQUIRE ( 52.68 == Approx ( man.DistanceTo ( liv ).GetKilometers() ).epsilon( 0.001 ) );
 }
 
+TEST_CASE ( "LatLon DegreesToRadians" )
+{
+    REQUIRE ( 0.08726 == Approx ( DegreesToRadians ( 5 ) ).epsilon( 0.00001 ) );
+}
+
+TEST_CASE ( "LatLon RadiansToDegrees" )
+{
+    REQUIRE ( 286.479 == Approx ( RadiansToDegrees ( 5 ) ).epsilon( 0.001 ) );
+}
 

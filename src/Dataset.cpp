@@ -9,9 +9,11 @@
 #include "TextIndexNaive.h"
 #include "NormalizerNaive.h"
 #include "ResponseInternal.h"
-#include "TextScorer.h"
 #include "GeoScorer.h"
+#include "TextScorer.h"
+#include "FilteringGeoTextScorer.h"
 #include "CoordinateIndex.h"
+#include "LocationFilter.h"
 
 using namespace Mapzen :: Pelopia;
 using namespace std;
@@ -81,7 +83,7 @@ public:
 
     typedef map<Id, MatchQuality> HitMap;
 
-    const Response& Search( const Normalizer::Result& res, Scorer& p_scorer, Format p_format )
+    const Response& Search( const Normalizer::Result& res, const Scorer& p_scorer, Format p_format )
     {
         HitMap hits;
 
@@ -97,15 +99,17 @@ public:
                     Id id = uses.GetTermUse( i ).ObjectId();
                     MatchQuality score = p_scorer.Score( id );
 
-                    // insert or update max score
-                    HitMap::iterator hit = hits.find( id );
-                    if( hit == hits.end() )
-                    {
-                        hits [ id ] = score;
-                    }
-                    else
-                    {
-                        hit->second = max( hit->second, score );
+                    if ( score > 0 )
+                    {   // insert or update max score
+                        HitMap::iterator hit = hits.find( id );
+                        if( hit == hits.end() )
+                        {
+                            hits [ id ] = score;
+                        }
+                        else
+                        {
+                            hit->second = max( hit->second, score );
+                        }
                     }
                 }
             }
@@ -158,13 +162,36 @@ Dataset::Search( const char*        p_text,
                  const LatLon&      p_scope,
                  const Distance&    p_radius,
                  Format             p_format )
-{
-    const Normalizer::Result& res = m_impl->m_norm.Normalize( p_text ); //TODO: refactor
+{   //TODO: refactor
+    const Normalizer::Result& res = m_impl->m_norm.Normalize( p_text );
 
-    //TODO: apply geo filtering ( p_scope, p_radius )
-    GeoScorer gs( *this, p_scope ); // TODO: combine with TextScorer
+    if ( p_radius.GetKilometers() == 0 )
+    {
+        return m_impl->Search( res, GeoTextScorer ( *this, p_scope, res ), p_format );
+    }
+    else
+    {   // add a location filter
 
-    return m_impl->Search( res, gs, p_format );
+        // TODO: move into FilteringGeoTextScorer
+        LocationFilter locationFilter ( m_impl -> Count() );
+        BoundingBox bb ( p_scope, p_radius );
+        for ( auto lat = m_impl->m_pointLatIndex . FindSegment ( bb.Bottom(), bb.Top() );
+                lat != m_impl->m_pointLatIndex.end();
+                ++lat )
+        {
+            locationFilter.Set ( *lat );
+        }
+        LocationFilter lonFilter ( m_impl -> Count() );
+        for ( auto lon = m_impl->m_pointLonIndex . FindSegment ( bb.Left(), bb.Right() );
+                lon != m_impl->m_pointLonIndex.end();
+                ++lon )
+        {
+            lonFilter.Set ( *lon );
+        }
+        locationFilter.And(lonFilter);
+
+        return m_impl->Search( res, FilteringGeoTextScorer ( *this, locationFilter, p_scope, res ), p_format );
+    }
 }
 
 const GeocodeJSON :: Feature&

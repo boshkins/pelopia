@@ -26,9 +26,11 @@ namespace Mapzen
             virtual MatchQuality Score ( Id ) const;
 
         protected:
-            double TermFrequency ( const Normalizer::Result& address, const char32_t* ) const;
-            double InverseDocumentFrequency ( const char32_t* ) const;
-            double TermWeight ( const Normalizer::Result& address, const char32_t* ) const;
+            double TermFrequency ( const Normalizer::Result& address, const char32_t*  term ) const;
+            double InverseDocumentFrequency ( const char32_t*  term ) const;
+            double TermWeight ( const Normalizer::Result& address, const char32_t*  term ) const;
+            double QueryNormalization () const;
+            double QueryCoordination ( const Normalizer::Result& address ) const;
 
         private:
             const Normalizer :: Result& m_query;

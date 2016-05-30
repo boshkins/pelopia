@@ -33,4 +33,3 @@ TEST_CASE ( "Distance Copy Construct" )
     REQUIRE ( d1.GetMiles() == d2.GetMiles() );
     REQUIRE ( d1.GetKilometers() == d2.GetKilometers() );
 }
-

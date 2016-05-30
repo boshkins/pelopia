@@ -25,4 +25,3 @@ Distance::GetMiles() const
 {
     return m_distanceKm / MilesToKm;
 }
-

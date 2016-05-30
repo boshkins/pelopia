@@ -42,10 +42,10 @@ MatchChar32 ( const char32_t* p_a, const char32_t* p_b )
 }
 
 double
-TextScorer::TermFrequency ( const Normalizer::Result& p_field, const char32_t* p_term ) const
+TextScorer::TermFrequency ( const Normalizer::Result& p_address, const char32_t* p_term ) const
 {
     size_t count = 0;
-    for ( auto&& f : p_field )
+    for ( auto&& f : p_address )
     {
         if ( MatchChar32 ( f.norm, p_term ) )
         {
@@ -63,6 +63,8 @@ TextScorer::TermFrequency ( const Normalizer::Result& p_field, const char32_t* p
 double
 TextScorer::InverseDocumentFrequency ( const char32_t* p_term ) const
 {   // IDF = 1 + log ( totalFeatures / ( 1 + # of features containing the term ) )
+    // Call at construction time
+
     const TextIndexReader::Node* node = GetDataset().GetIndex().Locate ( p_term );
     unsigned int featuresContaining = 0;
     if ( node != nullptr )
@@ -78,9 +80,21 @@ TextScorer::TermWeight ( const Normalizer::Result& p_address, const char32_t* p_
     return TermFrequency ( p_address, p_term ) * InverseDocumentFrequency ( p_term ) * ( 1.0 / sqrt ( double ( p_address.size() ) ) );
 }
 
+double
+TextScorer::QueryNormalization () const
+{   // QUERY_NORM = 1 / sqrt ( sum ( IDF of each term in the query ) )
+    return 0.0; //TBD. Call at construction time
+}
+
+double
+TextScorer::QueryCoordination ( const Normalizer::Result& p_address ) const
+{   // QueryCoordination = # of matching terms in the field / total terms in the query
+    return 0.0; //TBD
+}
 
 MatchQuality
 TextScorer::Score ( Id ) const
-{
-    return 1.0;
+{   // Score = QueryNormalizationFactor * QueryCoordination * sum ( TermWeight, for every term )
+    return 0.0; //TBD. Mind numerous multiple calculations of IDF and the like,
+                // push all calculations that do not require a feature to the constructor
 }
