@@ -20,7 +20,7 @@ namespace Mapzen
         class TextScorer : public Scorer
         {
         public:
-            TextScorer ( const Dataset &, const Normalizer :: Result & query );
+            TextScorer ( const Dataset &, const Normalizer&, const Normalizer :: Result & query );
             virtual ~TextScorer();
 
             virtual MatchQuality Score ( Id ) const;
@@ -33,7 +33,10 @@ namespace Mapzen
             double QueryCoordination ( const Normalizer::Result& address ) const;
 
         private:
+            const Normalizer&           m_norm;
             const Normalizer :: Result& m_query;
+
+            double m_queryNormFactor;
         };
     }
 }

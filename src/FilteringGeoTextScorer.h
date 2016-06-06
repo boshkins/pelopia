@@ -23,13 +23,17 @@ namespace Mapzen
         class FilteringGeoTextScorer : public GeoTextScorer
         {
         public:
-            FilteringGeoTextScorer ( const Dataset &,
-                                     const LocationFilter&,
-                                     const LatLon & p_center,
-                                     const Normalizer :: Result & query );
+            FilteringGeoTextScorer ( const Dataset &                p_dataset,
+                                     const LocationFilter&          p_filter,
+                                     const LatLon &                 p_center,
+                                     const Normalizer &             p_normalizer,
+                                     const Normalizer :: Result &   p_query );
             virtual ~FilteringGeoTextScorer();
 
             virtual MatchQuality Score ( Id ) const; // 0 - filtered out
+
+        private:
+            const LocationFilter& m_filter;
         };
     }
 }

@@ -13,7 +13,8 @@
 
 #include <pelopia/Pelopia.h>
 
-#include "Scorer.h"
+#include "TextScorer.h"
+#include "GeoScorer.h"
 
 namespace Mapzen
 {
@@ -25,12 +26,17 @@ namespace Mapzen
         class GeoTextScorer : public Scorer
         {
         public:
-            GeoTextScorer ( const Dataset &,
-                            const LatLon & p_center,
-                            const Normalizer :: Result & query );
+            GeoTextScorer ( const Dataset &                 dataset,
+                            const LatLon &                  center,
+                            const Normalizer &              normalizer,
+                            const Normalizer :: Result &    query );
             virtual ~GeoTextScorer();
 
             virtual MatchQuality Score ( Id ) const;
+
+        private:
+            GeoScorer   m_geo;
+            TextScorer  m_text;
         };
     }
 }

@@ -100,8 +100,8 @@ TEST_CASE ( "Dataset Search one term, focus LatLon, unbound" )
     MatchQuality score;
 
     REQUIRE ( resp.Get ( 0, id, score ) );
-    REQUIRE ( id == 9 );
-    REQUIRE ( score == 1.0 );  // Jacksonville FL, right at focus
+    REQUIRE ( 9 == id );
+    REQUIRE ( 0.4253  == Approx ( score ).epsilon ( 0.01 ) );  // Jacksonville FL, right at focus
 
     MatchQuality prev_score;
     prev_score = score;

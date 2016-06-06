@@ -20,6 +20,8 @@ SRC = main \
     normalizernaive \
     geoscorer \
     textscorer \
+    geotextscorer \
+    filteringgeotextscorer \
     dataset \
     coordinateindex \
     locationfilter  \

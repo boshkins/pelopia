@@ -23,10 +23,7 @@ namespace Mapzen
             NormalizerNaive();
             virtual ~NormalizerNaive();
 
-            virtual const Result& Normalize ( const char* phrase );
-
-        private:
-            std::vector < char32_t > m_strings;
+            virtual void Normalize ( const char* phrase, Result& ) const;
         };
     }
 }

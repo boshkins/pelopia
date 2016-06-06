@@ -15,10 +15,22 @@
 
 using namespace Mapzen::Pelopia;
 
-TextScorer::TextScorer ( const Dataset & p_dataset, const Normalizer :: Result & p_query )
+TextScorer::TextScorer ( const Dataset & p_dataset, const Normalizer& p_norm, const Normalizer :: Result & p_query )
 :   Scorer ( p_dataset ),
-    m_query ( p_query )
+    m_norm  (p_norm ),
+    m_query ( p_query ),
+    m_queryNormFactor ( 0 )
 {
+    // QUERY_NORM = 1 / sqrt ( sum ( IDF of each term in the query ) )
+    double totalIDF = 0;
+    for ( auto&& i : m_query.m_terms )
+    {
+        totalIDF += InverseDocumentFrequency ( i.norm );
+    }
+    if ( totalIDF != 0 )
+    {
+        m_queryNormFactor = 1.0 / sqrt ( totalIDF );
+    }
 }
 
 TextScorer::~TextScorer ()
@@ -45,7 +57,7 @@ double
 TextScorer::TermFrequency ( const Normalizer::Result& p_address, const char32_t* p_term ) const
 {
     size_t count = 0;
-    for ( auto&& f : p_address )
+    for ( auto&& f : p_address.m_terms )
     {
         if ( MatchChar32 ( f.norm, p_term ) )
         {
@@ -77,24 +89,49 @@ TextScorer::InverseDocumentFrequency ( const char32_t* p_term ) const
 double
 TextScorer::TermWeight ( const Normalizer::Result& p_address, const char32_t* p_term ) const
 {   // TermWeight = TF * IDF * ( 1 / sqrt # of terms in the address )
-    return TermFrequency ( p_address, p_term ) * InverseDocumentFrequency ( p_term ) * ( 1.0 / sqrt ( double ( p_address.size() ) ) );
+    return TermFrequency ( p_address, p_term ) *
+           InverseDocumentFrequency ( p_term ) *
+           ( 1.0 / sqrt ( double ( p_address.m_terms.size() ) ) );
 }
 
 double
 TextScorer::QueryNormalization () const
 {   // QUERY_NORM = 1 / sqrt ( sum ( IDF of each term in the query ) )
-    return 0.0; //TBD. Call at construction time
+    return m_queryNormFactor;
 }
 
 double
 TextScorer::QueryCoordination ( const Normalizer::Result& p_address ) const
 {   // QueryCoordination = # of matching terms in the field / total terms in the query
-    return 0.0; //TBD
+    if ( m_query.m_terms.size () == 0 )
+    {
+        return 0;
+    }
+
+    unsigned int matchCount = 0;
+    for ( auto&& i : m_query.m_terms )
+    {
+        for  (auto&& f : p_address.m_terms )
+        {
+            if ( MatchChar32 ( f.norm, i.norm ) )
+            {
+                ++matchCount;
+            }
+        }
+    }
+    return (double)matchCount / m_query.m_terms.size ();
 }
 
 MatchQuality
-TextScorer::Score ( Id ) const
+TextScorer::Score ( Id p_id ) const
 {   // Score = QueryNormalizationFactor * QueryCoordination * sum ( TermWeight, for every term )
-    return 0.0; //TBD. Mind numerous multiple calculations of IDF and the like,
-                // push all calculations that do not require a feature to the constructor
+    Normalizer::Result normAddress;
+    m_norm.Normalize ( GetDataset().Place( p_id ).Label(), normAddress );
+    double totalWeight = 0;
+    for ( auto&& i : m_query.m_terms )
+    {
+        //TODO. Eliminate multiple calculations of each term's IDF (once in constructor, once here inside TermWeight)
+        totalWeight += TermWeight ( normAddress, i.norm );
+    }
+    return  m_queryNormFactor * QueryCoordination ( normAddress ) * totalWeight;
 }

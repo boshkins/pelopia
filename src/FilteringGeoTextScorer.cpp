@@ -10,13 +10,17 @@
 
 #include "FilteringGeoTextScorer.h"
 
+#include "LocationFilter.h"
+
 using namespace Mapzen::Pelopia;
 
-FilteringGeoTextScorer::FilteringGeoTextScorer ( const Dataset & p_dataset,
-                                                 const LocationFilter&,
-                                                 const LatLon & p_center,
-                                                 const Normalizer :: Result & query )
-: Scorer ( p_dataset )
+FilteringGeoTextScorer::FilteringGeoTextScorer ( const Dataset &                p_dataset,
+                                                 const LocationFilter&          p_filter,
+                                                 const LatLon &                 p_center,
+                                                 const Normalizer &             p_normalizer,
+                                                 const Normalizer :: Result &   p_query )
+:   GeoTextScorer ( p_dataset, p_center, p_normalizer, p_query ),
+    m_filter ( p_filter )
 {
 }
 
@@ -25,7 +29,7 @@ FilteringGeoTextScorer::~FilteringGeoTextScorer ()
 }
 
 MatchQuality
-FilteringGeoTextScorer::Score ( Id ) const
+FilteringGeoTextScorer::Score ( Id p_id ) const
 {
-    return 0.0;
+    return m_filter.IsSet( p_id ) ? GeoTextScorer::Score( p_id ) : 0;
 }

@@ -18,7 +18,6 @@ TEST_CASE ( "GeoScorer GeoScore" )
     LatLon focus ( 30.21615, -81.598765 ); // Jacksonville, FL
     GeoScorer s ( ds, focus );
 
-    const double MaxKm = ds.MaxDistance().GetKilometers();
     SECTION ( "DeadCenter" )
     {
         REQUIRE ( 1.0 == s.Score ( 9 ) );

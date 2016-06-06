@@ -15,13 +15,15 @@ NormalizerNaive :: ~NormalizerNaive()
 {
 }
 
-const Normalizer :: Result&
-NormalizerNaive :: Normalize ( const char* p_phrase )
+void
+NormalizerNaive :: Normalize ( const char* p_phrase, Normalizer::Result& p_result ) const
 {
-    m_result.clear();
-    m_strings.clear();
+    p_result.m_terms.clear();
+    p_result.m_strings.clear();
+    p_result.m_strings.clear();
+
     size_t sizeBytes = strlen ( p_phrase );
-    m_strings.reserve ( sizeBytes + 1 ); // enough for the "worst" case: 1-term phrase
+    p_result.m_strings.reserve ( sizeBytes + 1 ); // enough for the "worst" case: 1-term phrase
 
     const char* ch = p_phrase;
     const char* end = p_phrase + sizeBytes;
@@ -41,14 +43,14 @@ NormalizerNaive :: Normalize ( const char* p_phrase )
             }
             else
             {   // save the new term
-                m_strings.push_back ( 0 );
+                p_result.m_strings.push_back ( 0 );
 
                 NormalizedTerm nt;
                 nt.startBytes = curTerm - p_phrase;
                 nt.lengthBytes = prev_ch - curTerm;
-                nt.norm = m_strings.data() + curNormTerm;
+                nt.norm = p_result.m_strings.data() + curNormTerm;
 
-                m_result.push_back ( nt );
+                p_result.m_terms.push_back ( nt );
                 curTerm = nullptr;
             }
         }
@@ -57,24 +59,22 @@ NormalizerNaive :: Normalize ( const char* p_phrase )
             if ( curTerm == nullptr )
             {   // a new term starts
                 curTerm = prev_ch;
-                curNormTerm = m_strings.size();
+                curNormTerm = p_result.m_strings.size();
             }
-            m_strings.push_back ( cp );
+            p_result.m_strings.push_back ( cp );
         }
 
     }
 
     if ( curTerm != nullptr )
     {   // handle the last term
-        m_strings.push_back ( 0 );
+        p_result.m_strings.push_back ( 0 );
 
         NormalizedTerm nt;
         nt.startBytes = curTerm - p_phrase;
         nt.lengthBytes = end - curTerm;
-        nt.norm = m_strings.data() + curNormTerm;
+        nt.norm = p_result.m_strings.data() + curNormTerm;
 
-        m_result.push_back(nt);
+        p_result.m_terms.push_back(nt);
     }
-
-    return m_result;
 }

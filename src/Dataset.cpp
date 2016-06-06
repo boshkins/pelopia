@@ -50,14 +50,15 @@ public:
                 const char* value = feature.SearchableProperty( property );
                 if( value != nullptr )
                 {
-                    const Normalizer::Result& res = m_norm.Normalize( value );
-                    for( Normalizer::Result::const_iterator it = res.begin(); it != res.end(); ++it )
+                    Normalizer::Result res;
+                    m_norm.Normalize( value, res );
+                    for( auto&& it : res.m_terms )
                     {
-                        w.AddTermUse( string( value + it->startBytes, it->lengthBytes ), //TODO( pass char32_t* it->m_norm ) to avoid an extra conversion from UTF8
+                        w.AddTermUse( string( value + it.startBytes, it.lengthBytes ), //TODO( pass char32_t* it->m_norm ) to avoid an extra conversion from UTF8
                                        id,
                                        property,
                                        0,   // TODO: handle indexed properrties
-                                       it->startBytes );
+                                       it.startBytes );
                     }
                 }
             }
@@ -87,9 +88,9 @@ public:
     {
         HitMap hits;
 
-        for( Normalizer::Result::const_iterator it = res.begin(); it != res.end(); ++it )
+        for( auto&& it : res.m_terms )
         {
-            const TextIndexReader :: Node* node = m_reader->Locate( it->norm );
+            const TextIndexReader :: Node* node = m_reader->Locate( it.norm );
             if( node != nullptr )
             {   // add all uses of the term to the result set(filter out duplicates)
                 const TextIndexReader :: Payload& uses = node->GetPayload();
@@ -116,9 +117,9 @@ public:
 
             // copy hits to the results container
             m_response.Clear();
-            for( HitMap::const_iterator it = hits.begin(); it != hits.end(); ++it )
+            for( auto&& hit : hits )
             {
-                m_response.AppendMatch( it->first, it->second );
+                m_response.AppendMatch( hit.first, hit.second );
             }
 
             // sort on descending score and exclude extra results
@@ -152,9 +153,10 @@ Dataset::~Dataset()
 const Response&
 Dataset::Search( const char* p_text, Format p_format )
 {
-    const Normalizer::Result& res = m_impl->m_norm.Normalize( p_text ); //TODO: refactor
-    TextScorer ts( *this, res );
-    return m_impl->Search( res, ts, p_format );
+    Normalizer::Result res;
+    m_impl->m_norm.Normalize( p_text, res );
+    TextScorer ts( *this, m_impl->m_norm, res );
+    return m_impl->Search( res, ts, p_format ); //TODO: will call Normalize again - refactor
 }
 
 const Response&
@@ -162,12 +164,13 @@ Dataset::Search( const char*        p_text,
                  const LatLon&      p_scope,
                  const Distance&    p_radius,
                  Format             p_format )
-{   //TODO: refactor
-    const Normalizer::Result& res = m_impl->m_norm.Normalize( p_text );
+{
+    Normalizer::Result res;
+    m_impl->m_norm.Normalize( p_text, res );
 
     if ( p_radius.GetKilometers() == 0 )
     {
-        return m_impl->Search( res, GeoTextScorer ( *this, p_scope, res ), p_format );
+        return m_impl->Search( res, GeoTextScorer ( *this, p_scope, m_impl->m_norm, res ), p_format );
     }
     else
     {   // add a location filter
@@ -190,7 +193,7 @@ Dataset::Search( const char*        p_text,
         }
         locationFilter.And(lonFilter);
 
-        return m_impl->Search( res, FilteringGeoTextScorer ( *this, locationFilter, p_scope, res ), p_format );
+        return m_impl->Search( res, FilteringGeoTextScorer ( *this, locationFilter, p_scope, m_impl->m_norm, res ), p_format );
     }
 }
 

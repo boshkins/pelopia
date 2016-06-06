@@ -27,17 +27,17 @@ namespace Mapzen
                 const char32_t* norm;   // NUL-terminated normalized term in 32-bit Unicode
             } NormalizedTerm;
 
-            typedef std::vector < NormalizedTerm > Result;
+            struct Result
+            {
+                std::vector < char32_t >        m_strings;
+                std::vector < NormalizedTerm >  m_terms;
+            };
 
         public:
             virtual ~Normalizer() {}
 
             // phrase is in UTF-8-encoded Unicode
-            // the returned reference stays valid until the next call to Normalize
-            virtual const Result& Normalize ( const char* phrase ) = 0;
-
-        protected:
-            Result m_result;
+            virtual void Normalize ( const char* phrase, Result& ) const = 0;
         };
     }
 }

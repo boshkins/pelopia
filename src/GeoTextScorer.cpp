@@ -12,10 +12,13 @@
 
 using namespace Mapzen::Pelopia;
 
-GeoTextScorer::GeoTextScorer ( const Dataset & p_dataset,
-                               const LatLon & p_center,
-                               const Normalizer :: Result & query )
-: Scorer ( p_dataset )
+GeoTextScorer::GeoTextScorer ( const Dataset &              p_dataset,
+                               const LatLon &               p_center,
+                               const Normalizer &           p_normalizer,
+                               const Normalizer :: Result & p_query )
+:   Scorer ( p_dataset ),
+    m_geo ( p_dataset, p_center ),
+    m_text ( p_dataset, p_normalizer, p_query)
 {
 }
 
@@ -24,7 +27,7 @@ GeoTextScorer::~GeoTextScorer ()
 }
 
 MatchQuality
-GeoTextScorer::Score ( Id ) const
+GeoTextScorer::Score ( Id p_id ) const
 {
-    return 0.0;
+    return m_geo.Score( p_id ) * m_text.Score( p_id );
 }
