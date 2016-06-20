@@ -1,6 +1,7 @@
 #include <pelopia/Pelopia.h>
 
 #include <sstream>
+#include <cmath>
 
 using namespace Mapzen :: Pelopia;
 using namespace std;
@@ -11,6 +12,19 @@ static const Coordinate MaxLatitude = 90.0;
 static const Coordinate MinLongitude = -180.0;
 static const Coordinate MaxLongitude = 180.0 + 360.0;
 
+static const double RadiansInDegree = 0.0174533;
+double
+Mapzen :: Pelopia :: DegreesToRadians ( double p_degrees )
+{
+    return p_degrees * RadiansInDegree;
+}
+
+double
+Mapzen :: Pelopia :: RadiansToDegrees ( double p_radians )
+{
+    return p_radians / RadiansInDegree;
+}
+
 static
 void
 CheckLatitude ( Coordinate p_lat ) throw ( std :: logic_error )
@@ -19,7 +33,7 @@ CheckLatitude ( Coordinate p_lat ) throw ( std :: logic_error )
     {
         ostringstream s;
         s << "Latitude value " << p_lat << " is outside of allowed range " << (int)MinLatitude << ".." << (int)MaxLatitude;
-        throw std :: logic_error ( s . str() ); 
+        throw std :: logic_error ( s . str() );
     }
 }
 
@@ -31,7 +45,7 @@ CheckLongitude ( Coordinate p_lon ) throw ( std :: logic_error )
     {
         ostringstream s;
         s << "Latitude value " << p_lon << " is outside of allowed range " << (int)MinLongitude << ".." << (int)MaxLongitude;
-        throw std :: logic_error ( s . str() ); 
+        throw std :: logic_error ( s . str() );
     }
 }
 
@@ -47,16 +61,32 @@ LatLon :: LatLon ( Coordinate p_lat, Coordinate p_lon ) throw ( std :: logic_err
     CheckLongitude ( m_lon );
 }
 
-void 
+void
 LatLon :: SetLatitude  ( Coordinate p_lat )  throw ( std :: logic_error )
 {
     CheckLatitude ( p_lat );
     m_lat = p_lat;
 }
 
-void 
+void
 LatLon :: SetLongitude ( Coordinate p_lon )  throw ( std :: logic_error )
 {
     CheckLongitude ( p_lon );
     m_lon = p_lon;
 }
+
+// Distance calculations below are based on the equirectangular approximation of the Earth's surface
+// ( see https://en.wikipedia.org/wiki/Equirectangular_projection
+
+Distance
+LatLon :: DistanceTo ( const LatLon& p_that ) const
+{
+    double lat1 = DegreesToRadians ( m_lat );
+    double lat2 = DegreesToRadians ( p_that.m_lat );
+    double lon1 = DegreesToRadians ( m_lon );
+    double lon2 = DegreesToRadians ( p_that.m_lon );
+    auto x = ( lon2 - lon1 ) * cos( ( lat1 + lat2 )  / 2.0 );
+    auto y = lat2 - lat1;
+    return Distance ( Distance::Kilometers, sqrt ( x * x + y * y ) * EarthRadius.GetKilometers() );
+}
+

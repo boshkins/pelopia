@@ -1,4 +1,5 @@
 default: pelopia
+test: pelopia
 
 TOP = $(abspath ../../..)
 MODULE = src/test
@@ -17,22 +18,28 @@ SRC = main \
     datanaive \
     textindexnaive \
     normalizernaive \
+    geoscorer \
+    textscorer \
+    geotextscorer \
+    filteringgeotextscorer \
     dataset \
+    coordinateindex \
+    locationfilter  \
 
 # libpostal
 
 OBJ = $(addprefix $(OBJDIR)/, $(addsuffix .o,$(SRC)))
 
-pelopia: makedirs $(LIBDIR)/libpelopia.a $(BINDIR)/test-pelopia 
-	cd $(SRCDIR); $(BINDIR)/test-pelopia 
-	
+pelopia: makedirs $(LIBDIR)/libpelopia.a $(BINDIR)/test-pelopia
+	cd $(SRCDIR); $(BINDIR)/test-pelopia
+
 $(LIBDIR)/libpelopia.a:
 	$(MAKE) --no-print-directory -C ..
 
 $(BINDIR)/test-pelopia: $(OBJ) $(LIBDIR)/libpelopia.a
 	$(CXX) -o $@ $^ #/usr/local/lib/libpostal.a
-    
+
 valgrind: $(BINDIR)/test-pelopia
-	cd $(SRCDIR); valgrind $(BINDIR)/test-pelopia 
+	cd $(SRCDIR); valgrind $(BINDIR)/test-pelopia
 
 .PHONY: std pelopia clean

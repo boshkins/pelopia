@@ -7,31 +7,34 @@
 using namespace Mapzen :: Pelopia;
 using namespace std;
 
-NormalizerNaive :: NormalizerNaive () 
+NormalizerNaive :: NormalizerNaive ()
 {
-}            
+}
 
 NormalizerNaive :: ~NormalizerNaive()
 {
 }
 
-const Normalizer :: Result& 
-NormalizerNaive :: Normalize ( const char* p_phrase, size_t p_sizeBytes ) 
+void
+NormalizerNaive :: Normalize ( const char* p_phrase, Normalizer::Result& p_result ) const
 {
-    m_result.clear();
-    m_strings.clear();
-    m_strings.reserve ( p_sizeBytes + 1 ); // enough for the "worst" case: 1-term phrase
+    p_result.m_terms.clear();
+    p_result.m_strings.clear();
+    p_result.m_strings.clear();
 
-    const char* ch = p_phrase; 
-    const char* end = p_phrase + p_sizeBytes;
+    size_t sizeBytes = strlen ( p_phrase );
+    p_result.m_strings.reserve ( sizeBytes + 1 ); // enough for the "worst" case: 1-term phrase
+
+    const char* ch = p_phrase;
+    const char* end = p_phrase + sizeBytes;
     const char* curTerm = nullptr;
     size_t curNormTerm = 0;
-    
+
     while ( ch < end )
     {
         const char* prev_ch = ch;
         uint32_t cp = utf8 :: next ( ch, end );
-        
+
         if ( ::iswpunct ( cp ) || ::iswspace ( cp ) )
         {
             if ( curTerm == nullptr )
@@ -40,40 +43,38 @@ NormalizerNaive :: Normalize ( const char* p_phrase, size_t p_sizeBytes )
             }
             else
             {   // save the new term
-                m_strings.push_back ( 0 );
-                
+                p_result.m_strings.push_back ( 0 );
+
                 NormalizedTerm nt;
-                nt.startBytes = curTerm - p_phrase; 
+                nt.startBytes = curTerm - p_phrase;
                 nt.lengthBytes = prev_ch - curTerm;
-                nt.norm = m_strings.data() + curNormTerm;
-                
-                m_result.push_back ( nt );
+                nt.norm = p_result.m_strings.data() + curNormTerm;
+
+                p_result.m_terms.push_back ( nt );
                 curTerm = nullptr;
             }
-        } 
+        }
         else
         {   // not whitespace/punctuation
             if ( curTerm == nullptr )
             {   // a new term starts
                 curTerm = prev_ch;
-                curNormTerm = m_strings.size();
+                curNormTerm = p_result.m_strings.size();
             }
-            m_strings.push_back ( cp );
+            p_result.m_strings.push_back ( cp );
         }
 
     }
-                
+
     if ( curTerm != nullptr )
     {   // handle the last term
-        m_strings.push_back ( 0 );
-        
-        NormalizedTerm nt;
-        nt.startBytes = curTerm - p_phrase; 
-        nt.lengthBytes = end - curTerm;
-        nt.norm = m_strings.data() + curNormTerm;
-        
-        m_result.push_back(nt);
-    }
+        p_result.m_strings.push_back ( 0 );
 
-    return m_result;
+        NormalizedTerm nt;
+        nt.startBytes = curTerm - p_phrase;
+        nt.lengthBytes = end - curTerm;
+        nt.norm = p_result.m_strings.data() + curNormTerm;
+
+        p_result.m_terms.push_back(nt);
+    }
 }

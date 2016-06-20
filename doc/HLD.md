@@ -339,7 +339,7 @@ To support search filtered by a BoundingBox, we need an ability to filter locati
 
 **PointLatIndex**: an array of pairs "coordinate, object Id" sorted by coordinate (latitude). This index will only contain objects with location specified as a point. There may be multiple entries with matching coordinates.
 
-The principal operation will be to extract the subset of points located between 2 coordinates [*low* .. *high*]:
+The principal operation will be to extract the subset of points located between 2 coordinates [*low* .. *high*], represented as an iterator:
 
 	FindSegment ( CoordIndex, LowCoord, HighCoord ) : ( firstIdx, lastIdx )
 		firstIdx = FindFirstGreaterThanOrEqual ( CoordIndex, 0, size ( CoordIndex ), LowCoord )  
@@ -347,13 +347,15 @@ The principal operation will be to extract the subset of points located between 
 											firstIdx,
 											size ( CoordIndex ),
 											HighCoord )  
-		return ( firstIdx, lastIdx )
+		return Iterator ( firstIdx, lastIdx )
 
 The coordinate will be initially represented as a double. The alternatives would be float and integer-based fixed point; it may make sense to decrease precision of the coordinate to save space in this structure. The full-precision coordinates extracted from the objects will then be used at the scoring stage to filter out false hits, if necessary.
 
 For additional memory savings at the cost of lookup speed, pairs "coordinate, object Id" may be packed into fewer than 12 bytes (12 = 8 for double + 4 for Id). The minimum number of bits required to represent all entries can be calculated at the construction time and saved with the structure.  
 
 The low level design should allow easy switching between representations. Some experimentation will be required to estimate memory/speed tradeoffs between different representations.
+
+A simplistic implementation of the index may use STL multimap template. 
 
 **PointLonIndex**: a similar structure using longitude as the coordinate.
 
@@ -399,10 +401,14 @@ For location with shaped geometry, we will represent the object's location with 
 
 ####Geo distance calculations
 
-The distance between two points will be calculated assuming that the world is flat, which should be sufficient for relatively small areas. As an option, we can consider implementing more computationally expensive but more accurate Haversine formula [https://en.wikipedia.org/wiki/Haversine_formula](https://en.wikipedia.org/wiki/Haversine_formula). For now, the distance is calculated using the Pythagorean theorem:
+The distance between two points will be calculated using the Pythagorean theorem ( source: http://www.movable-type.co.uk/scripts/latlong.html, lat/lon values are in radians ):
 
 	Distance ( LatLon ( lat1, lon1 ), LatLon ( lat2, lon2 ) ) =
-											sqrt ( ( lat2 - lat1 ) ** 2 + ( lon2 - lon1 ) ** 2 )  
+		6,371km * sqrt ( ( ( lon2 - lon1 ) * cos ( lat1 + lat2 ) ) ** 2 + ( lat2 - lat1 ) ** 2 )  
+
+Note that the system-provided implementation of sqrt and cos are relatively slow and can become a performance bottleneck. If that happens, be prepared to replace them with less accurate but faster versions, e.g. based on using Taylor series with a low number of iterations (see https://en.wikipedia.org/wiki/Taylor_series ).
+
+As an option, we can consider implementing more computationally expensive but more accurate Haversine formula [https://en.wikipedia.org/wiki/Haversine_formula](https://en.wikipedia.org/wiki/Haversine_formula). 
 
 ####Full text search support
 **TextIndex**: a prefix tree with all words extracted from all relevant properties of all objects in the dataset, after analysis and transformation. Payload is a set of tuples: object Id, property Id, position inside property (offset/length; for multi-value properties also index of the sub-property).
@@ -451,6 +457,7 @@ public:
 	class Payload // naive: vector < TermUse >
 	{	// the collection is sorted by increasing object Id, then by increasing index, then by increasing position  
 		virtual size_t Count () const = 0;
+        virtual size_t FeatureCount () const = 0; // # of distinct feature Ids
 		virtual const TermUse& GetTermUse ( size_t index ) const throw (index_out_of_bounds) = 0;
 	};
 
@@ -494,20 +501,21 @@ There should be a mechanism for overriding the library's internal scoring functi
 
 To limit the amount of calculations, scoring is done after applying location filtering.
 
-####Full text search
+####Text scoring
 
-For each term in a tokenized full text query, calculate its WEIGHT:
+NOTE. Currently, we use the "Label" property of GeocodeJSON object to represent its full name and address. The text of the property should be normalized before it is used for text scoring. 
+
+The calculation of TEXTSCORE is done for every GeocodeJSON object (feature) that passes filtering:
+
+For each term in the *normalized* full text query, calculate its WEIGHT:
 
 Term Frequency:
 
-	TF = sqrt ( # of appearances of the term in the field )
+	TF = sqrt ( # of appearances of the term in the *Label* field of the feature )
 
-Inverse document frequency: the more often the term appears in the dataset, the less relevant it is. This value can be pre-calculated for every term in the dataset, at the cost of increased memory footprint of the dataset.
+Inverse document frequency: the more often the term appears in the dataset, the less relevant it is. This value can be pre-calculated for every term in the dataset.
 
-	IDF = 1 + log ( totalFields / ( 1 + # of fields containing the term ) )   
-
-NOTE. Currently, by "field" in this section we understand "address". However, that may include other GeoJSIN fields, depending on the answer to the
-# **Big question: which properties are we searching on?**  #
+	IDF = 1 + log ( totalFeatures / ( 1 + # of features containing the term ) )   
 
 
 Field-length norm: the more words in the field, the lower relevance of words in it:
@@ -531,7 +539,7 @@ Query coordination: rewards fields that contain a higher percentage of query ter
 
 Scoring function, similar to Lucene's Practical Scoring Function:
 
-	SCORE = QUERY_NORM * COORD * sum ( WEIGHT,  for each term in query )
+	TEXTSCORE = QUERY_NORM * COORD * sum ( WEIGHT,  for each term in query )
 
 In addition, boost score of fields where the order of found terms matches the order of terms in the query. Details **TBD**
 
@@ -545,15 +553,54 @@ First, the coordinates of retrieved locations are used to filter out false hits 
 
 Second, geographical distance between the location and the center of the search region is used as a tie breaker for elements of the result set with matching scores. For a shaped location (when supported), it can be the distance between the center of the search region and the location's centroid. Alternatively, and more expensively calculation-wise, it can be the distance between the center of the search region and the location's nearest point to it.
 
+Our first implementation of geo scorer will use *exp* decay function curve with the following parameters (see https://www.elastic.co/guide/en/elasticsearch/guide/current/decay-functions.html for an explanation of use):
+- origin: fixed at 0 (0 distance will always result in score of 1)
+- decay: fixed at 0.5 (score at distance *scale* - see below)
+- scale: distance that will result in score *decay*. Make it a fraction of X, where X is the distance between the dataset's farthest points (the latter should be pre-calculated; we can use the length of the diagonal of the dataset's bounding box, if available. Alternatively, can use the diagonal of the bounding box of the search)
+- offset: fixed at 0. It may also make sense to make it a fraction of X, say S = 1%. In this case, *scale* will be set to ( X - S / 2 ) / 2
+
+The formula for geo score using exp decay is
+
+    GEOSCORE_EXP = exp ( Lambda * max ( 0, DistanceFromCenter - offset ) )
+    
+    Lambda = log ( Decay ) / Scale
+
 ####Scoring API
 
 ```c++
 class Scorer
 {
 public:
-	virtual MatchQuality Score ( Dataset &, const vector < string > & query, const LatLon & center ) = 0;
+	virtual MatchQuality Score ( Id feature ) const = 0;
+	
+protected:
+    Scorer ( const Dataset& );
 }
 ```	
+
+The text scorer will accept the original normalized query:
+
+```c++
+class TextScorer : public Scorer
+{
+public:
+    TextScorer ( const Dataset &, const Normalizer :: Result & query );
+	virtual MatchQuality Score ( Id feature ) const;
+}
+```	
+
+The geo scorer will accept additional information on the geography of dataset (i.e. its boundaries) in order to involve distance in the scoring function:
+
+```c++
+class GeoScorer : public Scorer
+{
+public:
+    GeoScorer ( const Dataset &, const LatLon & center ); 
+	virtual MatchQuality Score ( Id feature ) const;
+}
+```	
+
+Scores returned by the two scorer objects will be multiplied (possibly weighed based on configuration-like parameters in Dataset) to produce the final MatchQuality used to sort entries in the Reponse. 
 
 ###Dataset
 Originally, dataset will be represented as a plain JSON file, which will be parsed and converted into library's internal structures at the Dataset object initialization time. For large datasets that is likely to become prohibitively slow, at which point we will have to introduce an intermediate representation (**IR**) used to store dataset in a more ready-to-consume (and external memory-efficient) format than JSON.
@@ -597,7 +644,7 @@ public:
     
     // phrase is in UTF-8-encoded Unicode
     // the returned reference stays valid until the next call to Normalize
-    virtual const Result& Normalize ( const char* phrase, size_t sizeBytes ) = 0;
+    virtual const Result& Normalize ( const char* phrase ) = 0;
 }
 ```	
 
@@ -844,18 +891,18 @@ An alternative installation structure, for Unix-like systems with root access, w
 |---|---|---|
 | ___1___ | | ___Various___ |
 | 1.1 | 1 | Logging to a file
-| 1.2 | 3 | Logging to a client-supplied stream
+| 1.2 | 1 | Exception handling wrapper
 | 1.3 | 2 | Use a dataset from Mapzen-produced JSON
-| 1.4 | 1 | Exception handling wrapper
+| 1.4 | 3 | Logging to a client-supplied stream
 | ___2___ |  | ___Search, Naive___ |  
 | 2.1 | 0 | Search using one term text, naive implementation
-| 2.2 | 2 | Search using one term text using focus BoundingBox, naive implementation
-| 2.3 | 2 | Search for address
-| 2.4 | 1 | Search for administrative area (city, state, etc.)
-| 2.5 | 0 | Search using one term text using focus LatLon, naive implementation
-| 2.6 | 2 | Search using multiple term text, naive implementation
-| 2.7 | 1 | Search using one incomplete term text, naive implementation
-| 2.8 | 1 | Search using multiple complete terms and one incomplete term text, naive implementation
+| 2.2 | 0 | Search using one term text using focus LatLon, naive implementation
+| 2.3 | 1 | Search for administrative area (city, state, etc.)
+| 2.4 | 1 | Search using one incomplete term text, naive implementation
+| 2.5 | 1 | Search using multiple complete terms and one incomplete term text, naive implementation
+| 2.6 | 2 | Search using one term text using focus BoundingBox, naive implementation
+| 2.7 | 2 | Search for address
+| 2.8 | 2 | Search using multiple term text, naive implementation
 | 2.9 | 2 | Autocomplete, naive
 | 2.10 | 3 | Reverse search, naive
 | ___3___  |  | ___Data___ |
@@ -870,18 +917,19 @@ An alternative installation structure, for Unix-like systems with root access, w
 | 4.6 | 3 | Autocomplete, optimized
 | 4.7 | 3 | Reverse search, optimized
 | ___5___ |  | ___APIs___  |
-| 5.1 | 0 | Search through a C API
-| 5.2 | 3 | Search through a Java API
-| 5.3 | 3 | Search through a Python API
-| 5.4 | 3 | Search through a Node.js API
-| 5.5 | 2 | Search through an Objective C API
-| 5.6 | 5 | Search through a Swift API
+| 5.1 | 0 | Search through a C++ API
+| 5.2 | 3 | Search through a Swift/Objective C API
+| 5.3 | 3 | Search through a C API
+| 5.4 | 3 | Search through a Java API
+| 5.5 | 3 | Search through a Python API
+| 5.6 | 3 | Search through a Node.js API
 | ___6___ |  | ___Build___ |
-| 6.1 | 3 | Download/build from sources in a clean environment on Windows
-| 6.2 | 1 | Download/build from sources in a clean environment on Linux
-| 6.3 | 3 | Download/build from sources in a clean environment on Android
-| 6.4 | 0 | Download/build from sources in a clean environment on OSX
-| 6.5 | 2 | Download/build from sources in a clean environment on iOS
+| 6.1 | 0 | Download/build from sources in a clean environment on Linux
+| 6.2 | 0 | Download/build from sources in a clean environment on OSX
+| 6.3 | 1 | Convert build system to CMake
+| 6.4 | 2 | Download/build from sources in a clean environment on iOS
+| 6.5 | 3 | Download/build from sources in a clean environment on Windows
+| 6.6 | 3 | Download/build from sources in a clean environment on Android
 | ___7___ |  | ___Install___ |
 | 7.1 | 3 | Installation package for Windows
 | 7.2 | 3 | Installation package for Linux
